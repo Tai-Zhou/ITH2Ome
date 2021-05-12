@@ -15,7 +15,7 @@
 		"ithome",
 		"水"
 	],
-	"publisher": "Tai",
+	"publisher": "astro-tai",
 	"icon": "img/icon.png",
 	"engines": {
 		"vscode": "^1.55.0"
