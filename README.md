@@ -48,7 +48,7 @@ IT之家第三方插件，划水特供版。
 
 ## 帮助本项目
 
-作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）的方法实现。首次接触 `TypeScript`与 `VSCode` 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。作者会在学业之余维护更新本项目，还请您保持耐心。
+作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）的方法实现。首次接触 `TypeScript` 与 `VSCode` 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是在 `develop` 分支[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。作者会在学业之余维护更新本项目，还请您保持耐心。
 
 ## 许可证
 
