@@ -1,0 +1,198 @@
+{
+	"name": "ith2ome",
+	"displayName": "ITH2Ome",
+	"description": "IT之家第三方插件，划水特供版",
+	"version": "1.0.0",
+	"author": "https://github.com/Tai-Zhou",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Tai-Zhou/ITH2Ome.git"
+	},
+	"license": "MIT",
+	"keywords": [
+		"IT",
+		"之家",
+		"ithome",
+		"水"
+	],
+	"publisher": "Tai",
+	"icon": "img/icon.png",
+	"engines": {
+		"vscode": "^1.55.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onView:latest",
+		"onView:hot",
+		"onView:comment"
+	],
+	"main": "./out/main.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "ith2ome",
+					"title": "ITH2Ome",
+					"icon": "img/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"ith2ome": [
+				{
+					"id": "latest",
+					"name": "最新"
+				},
+				{
+					"id": "hot",
+					"name": "热榜"
+				},
+				{
+					"id": "comment",
+					"name": "热评（无限期开发中）"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "ith2ome.latestRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "ith2ome.showContent",
+				"title": "查看内容"
+			},
+			{
+				"command": "ith2ome.openBrowser",
+				"title": "在浏览器中查看",
+				"icon": "$(globe)"
+			},
+			{
+				"command": "ith2ome.hotRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "ith2ome.daily",
+				"title": "日榜"
+			},
+			{
+				"command": "ith2ome.weekly",
+				"title": "周榜"
+			},
+			{
+				"command": "ith2ome.monthly",
+				"title": "月榜"
+			}
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "ith2ome.latestRefresh",
+					"when": "view == latest",
+					"group": "navigation"
+				},
+				{
+					"command": "ith2ome.daily",
+					"when": "view == hot",
+					"group": "navigation@0"
+				},
+				{
+					"command": "ith2ome.weekly",
+					"when": "view == hot",
+					"group": "navigation@1"
+				},
+				{
+					"command": "ith2ome.monthly",
+					"when": "view == hot",
+					"group": "navigation@2"
+				},
+				{
+					"command": "ith2ome.hotRefresh",
+					"when": "view == hot",
+					"group": "navigation@3"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "ith2ome.openBrowser",
+					"when": "view == latest || view == hot",
+					"group": "inline"
+				}
+			]
+		},
+		"configuration": {
+			"title": "ITH2Ome",
+			"properties": {
+				"ith2ome.autoRefresh": {
+					"type": "integer",
+					"default": 300,
+					"description": "“最新”自动刷新时间间隔，设置为 0 时禁用自动刷新，反之为时间间隔（秒）。"
+				},
+				"ith2ome.blockImages": {
+					"type": "boolean",
+					"default": false,
+					"description": "是否屏蔽图片：默认设置为 false，即显示图片。"
+				},
+				"ith2ome.keyWords": {
+					"type": "array",
+					"default": [
+						"微软承认",
+						"14nm",
+						"长征五号",
+						"空间站",
+						"发布",
+						"喜加一"
+					],
+					"description": "关键词列表，会在标题列表内强调显示。"
+				},
+				"ith2ome.blockWords": {
+					"type": "array",
+					"default": [
+						"iPhone 14"
+					],
+					"description": "屏蔽词列表，标题含有屏蔽词时将不显示在“最新”列表内。"
+				},
+				"ith2ome.defaultPeriod": {
+					"type": "integer",
+					"default": 0,
+					"description": "“热榜”默认榜单，设置为 0 时默认显示日榜，1 为周榜，2 为月榜。"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run -S esbuild-base -- --minify",
+		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+		"esbuild": "npm run -S esbuild-base -- --sourcemap",
+		"esbuild-watch": "npm run -S esbuild-base -- --sourcemap --watch",
+		"test-compile": "tsc -p ./"
+	},
+	"devDependencies": {
+		"@types/feedparser": "^2.2.3",
+		"@types/glob": "^7.1.3",
+		"@types/mocha": "^8.0.4",
+		"@types/node": "^12.11.7",
+		"@types/superagent": "^4.1.11",
+		"@types/vscode": "^1.55.0",
+		"@typescript-eslint/eslint-plugin": "^4.14.1",
+		"@typescript-eslint/parser": "^4.14.1",
+		"esbuild": "^0.11.20",
+		"eslint": "^7.19.0",
+		"feedparser": "^2.2.10",
+		"glob": "^7.1.6",
+		"mocha": "^8.4.0",
+		"superagent": "^6.1.0",
+		"typescript": "^4.1.3",
+		"vsce": "^1.88.0",
+		"vscode-test": "^1.5.0"
+	},
+	"dependencies": {
+		"feedparser": "^2.2.10",
+		"node-html-parser": "^3.2.0",
+		"superagent": "^6.1.0"
+	}
+}
