@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -51,7 +51,7 @@
 				},
 				{
 					"id": "comment",
-					"name": "热评（无限期开发中）"
+					"name": "热评"
 				}
 			]
 		},
@@ -71,11 +71,6 @@
 				"icon": "$(globe)"
 			},
 			{
-				"command": "ith2ome.hotRefresh",
-				"title": "刷新",
-				"icon": "$(refresh)"
-			},
-			{
 				"command": "ith2ome.daily",
 				"title": "日榜"
 			},
@@ -86,6 +81,16 @@
 			{
 				"command": "ith2ome.monthly",
 				"title": "月榜"
+			},
+			{
+				"command": "ith2ome.hotRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "ith2ome.commentRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
 			}
 		],
 		"menus": {
@@ -114,12 +119,17 @@
 					"command": "ith2ome.hotRefresh",
 					"when": "view == hot",
 					"group": "navigation@3"
+				},
+				{
+					"command": "ith2ome.commentRefresh",
+					"when": "view == comment",
+					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
 					"command": "ith2ome.openBrowser",
-					"when": "view == latest || view == hot",
+					"when": "view == latest || view == hot || view == comment",
 					"group": "inline"
 				}
 			]
