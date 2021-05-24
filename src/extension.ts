@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 import feedparser = require('feedparser')
 import parse from 'node-html-parser';
 import * as superagent from 'superagent';
-import { runInThisContext } from 'node:vm';
 
 class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
@@ -46,7 +45,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 					if (!hide) {
 						var highlights: [number, number][] = [];
 						var loc: number;
-						var time = (<Date>item.pubdate).toLocaleString('zh-CN');
+						let time = (<Date>item.pubdate).toLocaleString('zh-CN');
 						for (var i in this.keys)
 							if ((loc = item.title.indexOf(this.keys[i])) != -1)
 								highlights.push([loc, loc + this.keys[i].length]);
@@ -55,6 +54,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 								highlights: highlights,
 								label: item.title
 							},
+							iconPath: new vscode.ThemeIcon("preview"),
 							description: time,
 							resourceUri: vscode.Uri.parse(item.link),
 							tooltip: new vscode.MarkdownString(`**${item.title}**\n\n*${time}*\n\n点击查看正文`),
@@ -85,9 +85,29 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 							highlights: highlights,
 							label: lis[i].attributes.title
 						},
+						iconPath: new vscode.ThemeIcon("flame"),
 						id: lis[i].attributes.href,
 						resourceUri: vscode.Uri.parse(lis[i].attributes.href),
 						tooltip: new vscode.MarkdownString(`**${lis[i].attributes.title}**`)
+					});
+				}
+				this._onDidChangeTreeData.fire();
+			});
+			this.refreshTimer = setTimeout(() => { this.refresh(); }, 86400000);
+		}
+		else if (this.mode == 2) {
+			superagent.get('http://cmt.ithome.com/api/comment/hotcommentlist/').end((err, res) => {
+				let commentList = res.body.content.commentlist
+				for (var i in commentList) {
+					let time = new Date(commentList[i].Comment.T).toLocaleString('zh-CN')
+					let locLength = commentList[i].Comment.Y.length
+					this.list.push({
+						label: `${commentList[i].Comment.S} | ${commentList[i].Comment.C.replace('\n', ' ')}`,
+						iconPath: new vscode.ThemeIcon("thumbsup"),
+						id: commentList[i].Comment.Ci,
+						description: time,
+						resourceUri: vscode.Uri.parse(commentList[i].News.NewsLink),
+						tooltip: new vscode.MarkdownString(`*${commentList[i].Comment.C.replace('\n', '*\n\n*')}*\n\n**${commentList[i].News.NewsTitle}**\n\n*${time}*\n\n${commentList[i].Comment.N}` + (locLength > 6 ? ` @ ${commentList[i].Comment.Y.substring(4, locLength - 2)}` : ''))
 					});
 				}
 				this._onDidChangeTreeData.fire();
@@ -115,8 +135,10 @@ export function activate(context: vscode.ExtensionContext) {
 	let latest = new contentProvider(0);
 	let currentPanel: vscode.WebviewPanel | undefined = undefined;
 	let hot = new contentProvider(1);
+	let comment = new contentProvider(2);
 	vscode.window.registerTreeDataProvider('latest', latest);
 	vscode.window.registerTreeDataProvider('hot', hot);
+	vscode.window.registerTreeDataProvider('comment', comment);
 	context.subscriptions.push(
 		vscode.commands.registerCommand('ith2ome.latestRefresh', () => {
 			latest.refresh();
@@ -151,6 +173,9 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 		vscode.commands.registerCommand('ith2ome.monthly', () => {
 			hot.switchPeriod(2);
+		}),
+		vscode.commands.registerCommand('ith2ome.commentRefresh', () => {
+			comment.refresh();
 		}),
 		vscode.commands.registerCommand('ith2ome.openBrowser', (item: vscode.TreeItem) => {
 			vscode.commands.executeCommand('vscode.open', item.resourceUri);
