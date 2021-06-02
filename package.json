@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -42,6 +42,10 @@
 		"views": {
 			"ith2ome": [
 				{
+					"id": "account",
+					"name": "通行证"
+				},
+				{
 					"id": "latest",
 					"name": "最新"
 				},
@@ -57,13 +61,27 @@
 		},
 		"commands": [
 			{
-				"command": "ith2ome.latestRefresh",
+				"command": "ith2ome.login",
+				"title": "登录"
+			},
+			{
+				"command": "ith2ome.logout",
+				"title": "退出",
+				"icon": "$(log-out)"
+			},
+			{
+				"command": "ith2ome.accountRefresh",
 				"title": "刷新",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "ith2ome.showContent",
 				"title": "查看内容"
+			},
+			{
+				"command": "ith2ome.latestRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
 			},
 			{
 				"command": "ith2ome.openBrowser",
@@ -73,6 +91,10 @@
 			{
 				"command": "ith2ome.daily",
 				"title": "日榜"
+			},
+			{
+				"command": "ith2ome.comment",
+				"title": "热评"
 			},
 			{
 				"command": "ith2ome.weekly",
@@ -96,6 +118,11 @@
 		"menus": {
 			"view/title": [
 				{
+					"command": "ith2ome.accountRefresh",
+					"when": "view == account",
+					"group": "navigation"
+				},
+				{
 					"command": "ith2ome.latestRefresh",
 					"when": "view == latest",
 					"group": "navigation"
@@ -111,14 +138,19 @@
 					"group": "navigation@1"
 				},
 				{
-					"command": "ith2ome.monthly",
+					"command": "ith2ome.comment",
 					"when": "view == hot",
 					"group": "navigation@2"
 				},
 				{
-					"command": "ith2ome.hotRefresh",
+					"command": "ith2ome.monthly",
 					"when": "view == hot",
 					"group": "navigation@3"
+				},
+				{
+					"command": "ith2ome.hotRefresh",
+					"when": "view == hot",
+					"group": "navigation@4"
 				},
 				{
 					"command": "ith2ome.commentRefresh",
@@ -128,8 +160,18 @@
 			],
 			"view/item/context": [
 				{
+					"command": "ith2ome.logout",
+					"when": "view == account && viewItem == account",
+					"group": "inline"
+				},
+				{
 					"command": "ith2ome.openBrowser",
-					"when": "view == latest || view == hot || view == comment",
+					"when": "view == latest && viewItem != refresh",
+					"group": "inline"
+				},
+				{
+					"command": "ith2ome.openBrowser",
+					"when": "view == hot || view == comment",
 					"group": "inline"
 				}
 			]
@@ -137,15 +179,25 @@
 		"configuration": {
 			"title": "ITH2Ome",
 			"properties": {
+				"ith2ome.account": {
+					"type": "string",
+					"default": "",
+					"description": "通行证 Cookie。"
+				},
+				"ith2ome.showImages": {
+					"type": "boolean",
+					"default": true,
+					"description": "查看内容时是否显示图片，默认设置为 true。"
+				},
+				"ith2ome.showRelated": {
+					"type": "boolean",
+					"default": true,
+					"description": "查看内容时是否显示相关文章，默认设置为 true。"
+				},
 				"ith2ome.autoRefresh": {
 					"type": "integer",
 					"default": 300,
 					"description": "“最新”自动刷新时间间隔，设置为 0 时禁用自动刷新，反之为时间间隔（秒）。"
-				},
-				"ith2ome.blockImages": {
-					"type": "boolean",
-					"default": false,
-					"description": "是否屏蔽图片：默认设置为 false，即显示图片。"
 				},
 				"ith2ome.keyWords": {
 					"type": "array",
@@ -169,7 +221,12 @@
 				"ith2ome.defaultPeriod": {
 					"type": "integer",
 					"default": 0,
-					"description": "“热榜”默认榜单，设置为 0 时默认显示日榜，1 为周榜，2 为月榜。"
+					"description": "“热榜”默认榜单，设置为 0 时默认显示日榜，1 为周榜，2 为热评，3 为月榜。"
+				},
+				"ith2ome.showThumbs": {
+					"type": "boolean",
+					"default": true,
+					"description": "“热评”是否显示点赞数，默认设置为 true。"
 				}
 			}
 		}
