@@ -24,6 +24,7 @@
 		"Other"
 	],
 	"activationEvents": [
+		"onView:account",
 		"onView:latest",
 		"onView:hot",
 		"onView:comment"
@@ -166,12 +167,7 @@
 				},
 				{
 					"command": "ith2ome.openBrowser",
-					"when": "view == latest && viewItem != refresh",
-					"group": "inline"
-				},
-				{
-					"command": "ith2ome.openBrowser",
-					"when": "view == hot || view == comment",
+					"when": "view != account && viewItem != refresh",
 					"group": "inline"
 				}
 			]
