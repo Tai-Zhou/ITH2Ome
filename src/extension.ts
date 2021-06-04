@@ -79,7 +79,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 					this._onDidChangeTreeData.fire();
 					superagent.get('https://my.ruanmei.com/api/usersign/getsigninfo?userHash=' + this.userHash).end((err2, res2) => {
 						this.list.push({
-							label: (res2.body.issign ? `今日已签到，获得 ${res2.body.coin} 金币` : '今日未签到') + `，累计金币数：${res2.body.totalcoin}`,
+							label: (res2.body.issign ? `今日已签到，` : '今日未签到，可') + `获得 ${res2.body.coin} 金币，累计金币数：${res2.body.totalcoin}`,
 							iconPath: new vscode.ThemeIcon(res2.body.issign ? 'pass' : 'error'),
 							id: 'signInfo'
 						});
@@ -120,8 +120,8 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 								highlights: highlights,
 								label: topList[i].title
 							},
-							iconPath: new vscode.ThemeIcon('lock'),
-							id: 'Top' + topList[i].newsid,
+							iconPath: new vscode.ThemeIcon('pinned'),
+							id: 'top' + topList[i].newsid,
 							description: time,
 							resourceUri: vscode.Uri.parse(topList[i].url.substr(0, 5) == 'https' ? topList[i].url : this.ithome + topList[i].url),
 							tooltip: new vscode.MarkdownString(`**${topList[i].title}**\n\n*${time}*\n\n${topList[i].description}\n\n点击数：${topList[i].hitcount}｜评论数：${topList[i].commentcount}`),
@@ -168,7 +168,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 								label: newsList[i].title
 							},
 							iconPath: new vscode.ThemeIcon('preview'),
-							id: newsList[i].newsid,
+							id: 'news' + newsList[i].newsid,
 							description: time,
 							resourceUri: vscode.Uri.parse(newsList[i].url.substr(0, 5) == 'https' ? newsList[i].url : this.ithome + newsList[i].url),
 							tooltip: new vscode.MarkdownString(`**${newsList[i].title}**\n\n*${time}*\n\n${newsList[i].description}\n\n点击数：${newsList[i].hitcount}｜评论数：${newsList[i].commentcount}`),
@@ -203,7 +203,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 							label: rankList[i].title
 						},
 						iconPath: new vscode.ThemeIcon('flame'),
-						id: rankList[i].newsid,
+						id: 'rank' + rankList[i].newsid,
 						description: time,
 						resourceUri: vscode.Uri.parse(rankList[i].url.substr(0, 5) == 'https' ? rankList[i].url : this.ithome + rankList[i].url),
 						tooltip: new vscode.MarkdownString(`**${rankList[i].title}**\n\n*${time}*\n\n${rankList[i].description}\n\n点击数：${rankList[i].hitcount}｜评论数：${rankList[i].commentcount}`),
@@ -226,12 +226,12 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 					let time = new Date(commentList[i].Comment.T).toLocaleString('zh-CN')
 					let locLength = commentList[i].Comment.Y.length
 					this.list.push({
-						label: (hideThumbs ? '' : `${commentList[i].Comment.S} | `) + commentList[i].Comment.C.replace('\n', ' '),
+						label: (hideThumbs ? '' : `${commentList[i].Comment.S} | `) + commentList[i].Comment.C.replace(RegExp('[\n]+', 'g'), ' '),
 						iconPath: new vscode.ThemeIcon('thumbsup'),
-						id: commentList[i].Comment.Ci,
+						id: 'comment' + commentList[i].Comment.Ci,
 						description: time,
 						resourceUri: vscode.Uri.parse(commentList[i].News.NewsLink),
-						tooltip: new vscode.MarkdownString(`*${commentList[i].Comment.C.replace('\n', '*\n\n*')}*\n\n**${commentList[i].News.NewsTitle}**\n\n*${time}*\n\n${commentList[i].Comment.N}` + (locLength > 6 ? ` @ ${commentList[i].Comment.Y.substring(4, locLength - 2)}` : '')),
+						tooltip: new vscode.MarkdownString(`*${commentList[i].Comment.C.replace(RegExp('[\n]+', 'g'), '*\n\n*')}*\n\n**${commentList[i].News.NewsTitle}**\n\n*${time}*\n\n${commentList[i].Comment.N}` + (locLength > 6 ? ` @ ${commentList[i].Comment.Y.substring(4, locLength - 2)}` : '')),
 						command: {
 							title: '查看内容',
 							command: 'ith2ome.showContent',
@@ -294,7 +294,7 @@ export function activate(context: vscode.ExtensionContext) {
 					{ preserveFocus: true, viewColumn: vscode.ViewColumn.One }
 				);
 			superagent.get('https://api.ithome.com/json/newscontent/' + newsid).end((err, res) => {
-				(<vscode.WebviewPanel>currentPanel).webview.html = `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp("<img.*?>", "g"), '#图片已屏蔽#')}`;
+				(<vscode.WebviewPanel>currentPanel).webview.html = `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#')}`;
 				if (showRelated)
 					superagent.get('http://api.ithome.com/json/tags/0' + String(newsid).substring(0, 3) + `/${newsid}.json`)
 						.responseType('text').end((err2, res2) => {
@@ -312,6 +312,19 @@ export function activate(context: vscode.ExtensionContext) {
 				null,
 				context.subscriptions
 			)
+		}),
+		vscode.commands.registerCommand('ith2ome.share', (item: vscode.TreeItem) => {
+			let text = (<vscode.MarkdownString>item.tooltip).value.replace(RegExp('[\*]+', 'g'), '');
+			let line3 = text.lastIndexOf('\n\n');
+			let line2 = text.lastIndexOf('\n\n', line3 - 2);
+			let line1 = text.lastIndexOf('\n\n', line2 - 2);
+			let dic = (<string>item.id)[0] != 'c' ? ['标题：', '\n时间：', '\n内容：', '\n'] : ['', '\n\n标题：', '\n时间：', '\n用户：']
+			vscode.env.clipboard.writeText(dic[0] + text.substring(0, line1).replace(RegExp('[\n]+', 'g'), '\n') + dic[1] + text.substring(line1 + 2, line2) + dic[2] + text.substring(line2 + 2, line3) + dic[3] + text.substring(line3 + 2) + '\n' + item.resourceUri).then(() => {
+				vscode.window.showInformationMessage('新闻复制成功！');
+			});
+		}),
+		vscode.commands.registerCommand('ith2ome.openBrowser', (item: vscode.TreeItem) => {
+			vscode.commands.executeCommand('vscode.open', item.resourceUri);
 		}),
 		vscode.commands.registerCommand('ith2ome.latestRefresh', () => {
 			config = vscode.workspace.getConfiguration('ith2ome');
@@ -342,9 +355,6 @@ export function activate(context: vscode.ExtensionContext) {
 			showImages = <boolean>config.get('showImages');
 			showRelated = <boolean>config.get('showRelated');
 			comment.refresh();
-		}),
-		vscode.commands.registerCommand('ith2ome.openBrowser', (item: vscode.TreeItem) => {
-			vscode.commands.executeCommand('vscode.open', item.resourceUri);
 		})
 	);
 }
