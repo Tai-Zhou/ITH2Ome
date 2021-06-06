@@ -294,7 +294,7 @@ export function activate(context: vscode.ExtensionContext) {
 					{ preserveFocus: true, viewColumn: vscode.ViewColumn.One }
 				);
 			superagent.get('https://api.ithome.com/json/newscontent/' + newsid).end((err, res) => {
-				(<vscode.WebviewPanel>currentPanel).webview.html = `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#')}`;
+				(<vscode.WebviewPanel>currentPanel).webview.html = (res.body.btheme ? '<head><style>body{filter:grayscale(100%)}</style></head>' : '') + `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#')}`;
 				if (showRelated)
 					superagent.get('http://api.ithome.com/json/tags/0' + String(newsid).substring(0, 3) + `/${newsid}.json`)
 						.responseType('text').end((err2, res2) => {
@@ -303,7 +303,7 @@ export function activate(context: vscode.ExtensionContext) {
 							for (var i in relaList)
 								(<vscode.WebviewPanel>currentPanel).webview.html += `<li><a href="${relaList[i].url}">${relaList[i].newstitle}</a></li>`;
 							(<vscode.WebviewPanel>currentPanel).webview.html += '</ul>'
-						})
+						});
 			})
 			currentPanel.onDidDispose(
 				() => {
@@ -311,14 +311,14 @@ export function activate(context: vscode.ExtensionContext) {
 				},
 				null,
 				context.subscriptions
-			)
+			);
 		}),
 		vscode.commands.registerCommand('ith2ome.share', (item: vscode.TreeItem) => {
 			let text = (<vscode.MarkdownString>item.tooltip).value.replace(RegExp('[\*]+', 'g'), '');
 			let line3 = text.lastIndexOf('\n\n');
 			let line2 = text.lastIndexOf('\n\n', line3 - 2);
 			let line1 = text.lastIndexOf('\n\n', line2 - 2);
-			let dic = (<string>item.id)[0] != 'c' ? ['标题：', '\n时间：', '\n内容：', '\n'] : ['', '\n\n标题：', '\n时间：', '\n用户：']
+			let dic = (<string>item.id)[0] != 'c' ? ['标题：', '\n时间：', '\n内容：', '\n'] : ['', '\n\n标题：', '\n时间：', '\n用户：'];
 			vscode.env.clipboard.writeText(dic[0] + text.substring(0, line1).replace(RegExp('[\n]+', 'g'), '\n') + dic[1] + text.substring(line1 + 2, line2) + dic[2] + text.substring(line2 + 2, line3) + dic[3] + text.substring(line3 + 2) + '\n' + item.resourceUri).then(() => {
 				vscode.window.showInformationMessage('新闻复制成功！');
 			});
