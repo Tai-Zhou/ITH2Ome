@@ -3,11 +3,16 @@
 import * as vscode from 'vscode';
 import * as superagent from 'superagent';
 
+const ithome = 'https://www.ithome.com';
+
+class ith2omeItem extends vscode.TreeItem {
+	shareInfo?: string;
+}
+
 class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
-	private readonly ithome = 'https://www.ithome.com';
 	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
 	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
-	private list: vscode.TreeItem[] = [];
+	private list: ith2omeItem[] = [];
 	private mode: number = 0;
 	private userHash: string = '';
 	private last: number = -1;
@@ -123,13 +128,14 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 							iconPath: new vscode.ThemeIcon('pinned'),
 							id: 'top' + topList[i].newsid,
 							description: time,
-							resourceUri: vscode.Uri.parse(topList[i].url.substr(0, 5) == 'https' ? topList[i].url : this.ithome + topList[i].url),
+							resourceUri: vscode.Uri.parse(topList[i].url.substr(0, 5) == 'https' ? topList[i].url : ithome + topList[i].url),
 							tooltip: new vscode.MarkdownString(`**${topList[i].title}**\n\n*${time}*\n\n${topList[i].description}\n\n点击数：${topList[i].hitcount}｜评论数：${topList[i].commentcount}`),
 							command: {
 								title: '查看内容',
 								command: 'ith2ome.showContent',
 								arguments: [topList[i].title, time, topList[i].newsid],
-							}
+							},
+							shareInfo: `标题：${topList[i].title}\n时间：${time}\n内容：${topList[i].description}\n点击数：${topList[i].hitcount}｜评论数：${topList[i].commentcount}\n`
 						});
 					}
 				}
@@ -170,13 +176,14 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 							iconPath: new vscode.ThemeIcon('preview'),
 							id: 'news' + newsList[i].newsid,
 							description: time,
-							resourceUri: vscode.Uri.parse(newsList[i].url.substr(0, 5) == 'https' ? newsList[i].url : this.ithome + newsList[i].url),
+							resourceUri: vscode.Uri.parse(newsList[i].url.substr(0, 5) == 'https' ? newsList[i].url : ithome + newsList[i].url),
 							tooltip: new vscode.MarkdownString(`**${newsList[i].title}**\n\n*${time}*\n\n${newsList[i].description}\n\n点击数：${newsList[i].hitcount}｜评论数：${newsList[i].commentcount}`),
 							command: {
 								title: '查看内容',
 								command: 'ith2ome.showContent',
 								arguments: [newsList[i].title, time, newsList[i].newsid],
-							}
+							},
+							shareInfo: `标题：${newsList[i].title}\n时间：${time}\n内容：${newsList[i].description}\n点击数：${newsList[i].hitcount}｜评论数：${newsList[i].commentcount}\n`
 						});
 					}
 				}
@@ -205,13 +212,14 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 						iconPath: new vscode.ThemeIcon('flame'),
 						id: 'rank' + rankList[i].newsid,
 						description: time,
-						resourceUri: vscode.Uri.parse(rankList[i].url.substr(0, 5) == 'https' ? rankList[i].url : this.ithome + rankList[i].url),
+						resourceUri: vscode.Uri.parse(rankList[i].url.substr(0, 5) == 'https' ? rankList[i].url : ithome + rankList[i].url),
 						tooltip: new vscode.MarkdownString(`**${rankList[i].title}**\n\n*${time}*\n\n${rankList[i].description}\n\n点击数：${rankList[i].hitcount}｜评论数：${rankList[i].commentcount}`),
 						command: {
 							title: '查看内容',
 							command: 'ith2ome.showContent',
 							arguments: [rankList[i].title, time, rankList[i].newsid],
-						}
+						},
+						shareInfo: `标题：${rankList[i].title}\n时间：${time}\n内容：${rankList[i].description}\n点击数：${rankList[i].hitcount}｜评论数：${rankList[i].commentcount}`
 					});
 				}
 				this._onDidChangeTreeData.fire();
@@ -236,7 +244,8 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
 							title: '查看内容',
 							command: 'ith2ome.showContent',
 							arguments: [commentList[i].News.NewsTitle, '', commentList[i].News.NewsId],
-						}
+						},
+						shareInfo: `${commentList[i].Comment.C}\n\n标题：${commentList[i].News.NewsTitle}\n时间：${time}\n用户：${commentList[i].Comment.N}` + (locLength > 6 ? ` @ ${commentList[i].Comment.Y.substring(4, locLength - 2)}\n` : '\n')
 					});
 				}
 				this._onDidChangeTreeData.fire();
@@ -313,13 +322,8 @@ export function activate(context: vscode.ExtensionContext) {
 				context.subscriptions
 			);
 		}),
-		vscode.commands.registerCommand('ith2ome.share', (item: vscode.TreeItem) => {
-			let text = (<vscode.MarkdownString>item.tooltip).value.replace(RegExp('[\*]+', 'g'), '');
-			let line3 = text.lastIndexOf('\n\n');
-			let line2 = text.lastIndexOf('\n\n', line3 - 2);
-			let line1 = text.lastIndexOf('\n\n', line2 - 2);
-			let dic = (<string>item.id)[0] != 'c' ? ['标题：', '\n时间：', '\n内容：', '\n'] : ['', '\n\n标题：', '\n时间：', '\n用户：'];
-			vscode.env.clipboard.writeText(dic[0] + text.substring(0, line1).replace(RegExp('[\n]+', 'g'), '\n') + dic[1] + text.substring(line1 + 2, line2) + dic[2] + text.substring(line2 + 2, line3) + dic[3] + text.substring(line3 + 2) + '\n' + item.resourceUri).then(() => {
+		vscode.commands.registerCommand('ith2ome.share', (item: ith2omeItem) => {
+			vscode.env.clipboard.writeText(<string>item.shareInfo + item.resourceUri).then(() => {
 				vscode.window.showInformationMessage('新闻复制成功！');
 			});
 		}),
