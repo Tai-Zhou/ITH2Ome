@@ -99,12 +99,12 @@
 				"title": "日榜"
 			},
 			{
-				"command": "ith2ome.comment",
-				"title": "热评"
-			},
-			{
 				"command": "ith2ome.weekly",
 				"title": "周榜"
+			},
+			{
+				"command": "ith2ome.comment",
+				"title": "热评"
 			},
 			{
 				"command": "ith2ome.monthly",
