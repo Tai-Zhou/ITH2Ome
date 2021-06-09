@@ -37,7 +37,7 @@ IT之家第三方插件，划水特供版。
 * `ith2ome.keyWords`：关键词列表，会在标题列表内强调显示。
 * `ith2ome.blockWords`：屏蔽词列表，标题含有屏蔽词时将不显示在“最新”列表内。
 * `ith2ome.defaultPeriod`：“热榜”默认榜单，设置为 `0` 时默认显示日榜，`1` 为周榜，`2` 为热评，`3` 为月榜。。
-* `ith2ome.hideThumbs`：“热评”是否显示点赞数，默认设置为 true。
+* `ith2ome.showThumbs`：“热评”是否显示点赞数，默认设置为 true。
 
 ### 启动
 
