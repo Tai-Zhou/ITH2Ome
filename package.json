@@ -190,6 +190,11 @@
 					"default": "",
 					"description": "通行证 Cookie。"
 				},
+				"ith2ome.signReminder": {
+					"type": "boolean",
+					"default": true,
+					"description": "未签到时是否提醒，默认设置为 true。"
+				},
 				"ith2ome.showImages": {
 					"type": "boolean",
 					"default": true,

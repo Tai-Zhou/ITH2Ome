@@ -31,6 +31,7 @@ IT之家第三方插件，划水特供版。
 ### 设置
 
 * `ith2ome.account`：“通行证” `Cookie`。
+* `ith2ome.signReminder`: 未签到时是否提醒，默认设置为 `true`。
 * `ith2ome.showImages`：查看内容时是否显示图片，默认设置为 `true`。
 * `ith2ome.showRelated`：查看内容时是否显示相关文章，默认设置为 `true`。
 * `ith2ome.autoRefresh`：“最新”自动刷新时间间隔，设置为 `0` 时禁用自动刷新，反之为时间间隔（秒）。
@@ -54,7 +55,7 @@ IT之家第三方插件，划水特供版。
 5. 复制 `user=hash=` 之后的部分，例如 `user=hash=20110515TOPOSINF`，则复制 `20110515TOPOSINF`；
 6. 粘贴至插件输入框中，或是手动修改 `ith2ome.account` 设置。
 
-除上述 `Cookie` 外，本插件在**本地**不保存任何用户信息。本插件**不记录、上传、保存**任何用户使用数据。分享内容时，本插件会将分享内容写入系统剪贴板，并不包含读取剪贴板功能。`VSCode` 插件市场发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
+除上述 `Cookie` 外，本插件在**本地**不保存任何用户信息。本插件**不记录、上传、保存**任何用户使用数据。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。`VSCode` 插件市场发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
 
 ## 已知问题
 

@@ -3,6 +3,7 @@ import * as superagent from 'superagent';
 
 let config: vscode.WorkspaceConfiguration; // 所有设置信息
 var userHash: string; // 通行证 Cookie
+var signReminder: boolean; // 签到提醒
 var showImages: boolean; // 显示图片
 var showRelated: boolean; // 显示相关文章
 var autoRefresh: number; // “最新”刷新间隔
@@ -17,6 +18,7 @@ var lastNewsId: number = -1; // “最新”最后阅读标记，用于显示上
 function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	config = vscode.workspace.getConfiguration('ith2ome');
 	userHash = <string>config.get('account');
+	signReminder = <boolean>config.get('signReminder');
 	showImages = <boolean>config.get('showImages');
 	showRelated = <boolean>config.get('showRelated');
 	autoRefresh = <number>config.get('autoRefresh');
@@ -106,6 +108,8 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					}];
 					this.update.fire();
 					superagent.get('https://my.ruanmei.com/api/usersign/getsigninfo?userHash=' + userHash).end((err2, res2) => {
+						if (signReminder && !res2.body.issign)
+							vscode.window.showInformationMessage(`今日尚未签到，可获得 ${res2.body.coin} 金币～`);
 						this.list.push({
 							label: (res2.body.issign ? `今日已签到，` : '今日未签到，可') + `获得 ${res2.body.coin} 金币，累计金币数：${res2.body.totalcoin}`,
 							iconPath: new vscode.ThemeIcon(res2.body.issign ? 'pass' : 'error'),
