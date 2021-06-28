@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -24,10 +24,10 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onView:account",
-		"onView:latest",
-		"onView:hot",
-		"onView:comment"
+		"onView:ith2ome.account",
+		"onView:ith2ome.latest",
+		"onView:ith2ome.hot",
+		"onView:ith2ome.comment"
 	],
 	"main": "./out/main.js",
 	"contributes": {
@@ -43,19 +43,19 @@
 		"views": {
 			"ith2ome": [
 				{
-					"id": "account",
+					"id": "ith2ome.account",
 					"name": "通行证"
 				},
 				{
-					"id": "latest",
+					"id": "ith2ome.latest",
 					"name": "最新"
 				},
 				{
-					"id": "hot",
+					"id": "ith2ome.hot",
 					"name": "热榜"
 				},
 				{
-					"id": "comment",
+					"id": "ith2ome.comment",
 					"name": "热评"
 				}
 			]
@@ -125,59 +125,59 @@
 			"view/title": [
 				{
 					"command": "ith2ome.accountRefresh",
-					"when": "view == account",
+					"when": "view == ith2ome.account",
 					"group": "navigation"
 				},
 				{
 					"command": "ith2ome.latestRefresh",
-					"when": "view == latest",
+					"when": "view == ith2ome.latest",
 					"group": "navigation"
 				},
 				{
 					"command": "ith2ome.daily",
-					"when": "view == hot",
+					"when": "view == ith2ome.hot",
 					"group": "navigation@0"
 				},
 				{
 					"command": "ith2ome.weekly",
-					"when": "view == hot",
+					"when": "view == ith2ome.hot",
 					"group": "navigation@1"
 				},
 				{
 					"command": "ith2ome.comment",
-					"when": "view == hot",
+					"when": "view == ith2ome.hot",
 					"group": "navigation@2"
 				},
 				{
 					"command": "ith2ome.monthly",
-					"when": "view == hot",
+					"when": "view == ith2ome.hot",
 					"group": "navigation@3"
 				},
 				{
 					"command": "ith2ome.hotRefresh",
-					"when": "view == hot",
+					"when": "view == ith2ome.hot",
 					"group": "navigation@4"
 				},
 				{
 					"command": "ith2ome.commentRefresh",
-					"when": "view == comment",
+					"when": "view == ith2ome.comment",
 					"group": "navigation"
 				}
 			],
 			"view/item/context": [
 				{
 					"command": "ith2ome.logout",
-					"when": "view == account && viewItem == account",
+					"when": "view == ith2ome.account && viewItem == ith2ome.account",
 					"group": "inline"
 				},
 				{
 					"command": "ith2ome.share",
-					"when": "view != account && viewItem != refresh",
+					"when": "viewItem == ith2ome.article",
 					"group": "inline@0"
 				},
 				{
 					"command": "ith2ome.openBrowser",
-					"when": "view != account && viewItem != refresh",
+					"when": "viewItem == ith2ome.article",
 					"group": "inline@1"
 				}
 			]

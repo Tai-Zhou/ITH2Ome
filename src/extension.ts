@@ -32,7 +32,7 @@ function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 
 function show(title: string): boolean { // 返回是否显示该条新闻
 	for (var i in blockWords)
-		if (title.includes(blockWords[i]))
+		if (title.search(RegExp(blockWords[i], 'i')) != -1)
 			return false;
 	return true;
 }
@@ -41,13 +41,13 @@ function highlight(title: string): [number, number][] { // 返回该条新闻关
 	var highlights: [number, number][] = [];
 	var loc: number;
 	for (var i in keyWords)
-		if ((loc = title.indexOf(keyWords[i])) != -1)
+		if ((loc = title.search(RegExp(keyWords[i], 'i'))) != -1)
 			highlights.push([loc, loc + keysLength[i]]);
 	return highlights;
 }
 
 function linkCheck(url: string): vscode.Uri { // 检查链接是否以 https:// 开始
-	return vscode.Uri.parse(url.substr(0, 5) == 'https' ? url : 'https://www.ithome.com' + url);
+	return vscode.Uri.parse(url.substring(0, 5) == 'https' ? url : 'https://www.ithome.com' + url);
 }
 
 class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
@@ -101,7 +101,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					this.list = [{
 						label: `${userInfo.nickname}，您好！您已连续登录 ${userInfo.conldays} 天`,
 						iconPath: new vscode.ThemeIcon('account'),
-						contextValue: 'account'
+						contextValue: 'ith2ome.account'
 					}, {
 						label: `目前等级 ${userInfo.rank}，经验值 ${userInfo.exp}，需 ${userInfo.remainexp} 经验升级`,
 						iconPath: new vscode.ThemeIcon('star-empty'),
@@ -134,6 +134,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 						let time = new Date(topList[i].postdate).toLocaleString('zh-CN');
 						this.list.push({
 							label: { highlights: highlight(topList[i].title), label: topList[i].title },
+							contextValue: 'ith2ome.article',
 							iconPath: new vscode.ThemeIcon('pinned'),
 							id: 'top' + topList[i].newsid,
 							description: time,
@@ -151,7 +152,6 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 						if (i != '0')
 							this.list.push({
 								label: '上次阅读到这里，点击刷新',
-								contextValue: 'refresh',
 								iconPath: new vscode.ThemeIcon('eye'),
 								command: { title: '刷新', command: 'ith2ome.latestRefresh' }
 							})
@@ -159,9 +159,11 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					}
 					if (show(newsList[i].title)) {
 						let time = new Date(newsList[i].postdate).toLocaleString('zh-CN');
+						let highlights = highlight(newsList[i].title);
 						this.list.push({
-							label: { highlights: highlight(newsList[i].title), label: newsList[i].title },
-							iconPath: new vscode.ThemeIcon('preview'),
+							label: { highlights: highlights, label: newsList[i].title },
+							contextValue: 'ith2ome.article',
+							iconPath: new vscode.ThemeIcon(highlights.length ? 'lightbulb' : 'preview'),
 							id: 'news' + newsList[i].newsid,
 							description: time,
 							resourceUri: linkCheck(newsList[i].url),
@@ -184,6 +186,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					let time = new Date(rankList[i].postdate).toLocaleString('zh-CN');
 					this.list.push({
 						label: { highlights: highlight(rankList[i].title), label: rankList[i].title },
+						contextValue: 'ith2ome.article',
 						iconPath: new vscode.ThemeIcon('flame'),
 						id: 'rank' + rankList[i].newsid,
 						description: time,
@@ -206,6 +209,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					let user = commentList[i].Comment.N + (locLength > 6 ? ` @ ${commentList[i].Comment.Y.substring(4, locLength - 2)}` : '');
 					this.list.push({
 						label: (showThumbs ? `${commentList[i].Comment.S} | ` : '') + commentList[i].Comment.C.replace(RegExp('[\n]+', 'g'), ' '),
+						contextValue: 'ith2ome.article',
 						iconPath: new vscode.ThemeIcon('thumbsup'),
 						id: 'comment' + commentList[i].Comment.Ci,
 						description: time,
@@ -238,10 +242,10 @@ export function activate(context: vscode.ExtensionContext) {
 	let latest = new contentProvider(1);
 	let hot = new contentProvider(2);
 	let comment = new contentProvider(3);
-	vscode.window.registerTreeDataProvider('account', account);
-	vscode.window.registerTreeDataProvider('latest', latest);
-	vscode.window.registerTreeDataProvider('hot', hot);
-	vscode.window.registerTreeDataProvider('comment', comment);
+	vscode.window.registerTreeDataProvider('ith2ome.account', account);
+	vscode.window.registerTreeDataProvider('ith2ome.latest', latest);
+	vscode.window.registerTreeDataProvider('ith2ome.hot', hot);
+	vscode.window.registerTreeDataProvider('ith2ome.comment', comment);
 	context.subscriptions.push(
 		vscode.commands.registerCommand('ith2ome.login', () => { // 登录通行证
 			vscode.window.showInputBox({
@@ -274,9 +278,9 @@ export function activate(context: vscode.ExtensionContext) {
 			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((err, res) => {
 				panel!.webview.html = (res.body.btheme ? '<head><style>body{filter:grayscale(100%)}</style></head>' : '') + `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#')}`;
 				if (showRelated) // 显示相关文章
-					superagent.get('http://api.ithome.com/json/tags/0' + String(id).substring(0, 3) + `/${id}.json`).responseType('text').end((err2, res2) => {
+					superagent.get(`http://api.ithome.com/json/tags/0${Math.floor(id / 1000)}/${id}.json`).responseType('text').end((err2, res2) => {
 						panel!.webview.html += `<hr><h3>相关文章</h3><ul>`;
-						let relaList = JSON.parse(res2.body.toString().substr(16));
+						let relaList = JSON.parse(res2.body.toString().substring(16));
 						for (var i in relaList)
 							panel!.webview.html += `<li><a href="${relaList[i].url}">${relaList[i].newstitle}</a></li>`;
 						panel!.webview.html += '</ul>';
