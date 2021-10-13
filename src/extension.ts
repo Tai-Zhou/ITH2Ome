@@ -133,7 +133,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 						contextValue: 'ith2ome.account'
 					}, {
 						label: `目前等级 ${userInfo.rank}，经验值 ${userInfo.exp}，需 ${userInfo.remainexp} 经验升级`,
-						iconPath: new vscode.ThemeIcon('star-empty'),
+						iconPath: new vscode.ThemeIcon('star-empty')
 					}];
 					this.update.fire();
 					superagent.get('https://my.ruanmei.com/api/usersign/getsigninfo?userHash=' + userHash).end((err2, res2) => {
@@ -141,11 +141,11 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 							vscode.window.showInformationMessage(`今日尚未签到，可获得 ${res2.body.coin} 金币～`);
 						this.list.push({
 							label: (res2.body.issign ? `今日已签到，` : '今日未签到，可') + `获得 ${res2.body.coin} 金币，累计金币数：${res2.body.totalcoin}`,
-							iconPath: new vscode.ThemeIcon(res2.body.issign ? 'pass' : 'error'),
+							iconPath: new vscode.ThemeIcon(res2.body.issign ? 'pass' : 'error')
 						});
 						this.list.push({
 							label: `连续签到：${res2.body.cdays} 天，累计签到：${res2.body.mdays} 天`,
-							iconPath: new vscode.ThemeIcon('calendar'),
+							iconPath: new vscode.ThemeIcon('calendar')
 						});
 						this.update.fire();
 					});
@@ -161,27 +161,26 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 					lastReadId = -lastReadId;
 				superagent.get('https://api.ithome.com/json/newslist/news').end((err, res) => {
 					let topList = res.body.toplist;
-					for (let i in topList) {
-						latestNewsId = Math.max(latestNewsId, topList[i].newsid);
+					for (let i in topList)
 						if (show(topList[i].title))
 							this.list.push(newsFormat(topList[i], 'pinned'));
-					}
 					let newsList = res.body.newslist;
 					for (let i in newsList) {
-						latestNewsId = Math.max(latestNewsId, newsList[i].newsid);
-						if (newsList[i].newsid <= lastReadId) {
+						let orderTime = new Date(newsList[i].orderdate).getTime();
+						latestNewsId = Math.max(latestNewsId, orderTime);
+						if (orderTime <= lastReadId) {
 							if (i != '0')
-								this.list.push(lastRead)
+								this.list.push(lastRead);
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], 'preview'));
+							this.list.push(newsFormat(newsList[i], newsList[i].aid ? 'tag' : 'preview'));
 					}
 					this.list.push({
 						label: '加载更多数据',
 						iconPath: new vscode.ThemeIcon('eye'),
 						command: { title: '加载更多数据', command: 'ith2ome.latestRefresh', arguments: [new Date(newsList[newsList.length - 1].orderdate).getTime()] }
-					})
+					});
 					this.update.fire();
 				});
 			}
@@ -190,18 +189,18 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 				superagent.get('https://m.ithome.com/api/news/newslistpageget?ot=' + refreshType).end((err, res) => {
 					let newsList = res.body.Result;
 					for (let i in newsList) {
-						if (newsList[i].newsid <= lastReadId) {
-							this.list.push(lastRead)
+						if (lastReadId > 0 && new Date(newsList[i].orderdate).getTime() <= lastReadId) {
+							this.list.push(lastRead);
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], 'preview'));
+							this.list.push(newsFormat(newsList[i], newsList[i].url.search('lapin') != -1 ? 'tag' : 'preview'));
 					}
 					this.list.push({
 						label: '加载更多数据',
 						iconPath: new vscode.ThemeIcon('eye'),
 						command: { title: '加载更多数据', command: 'ith2ome.latestRefresh', arguments: [new Date(newsList[newsList.length - 1].orderdate).getTime()] }
-					})
+					});
 					this.update.fire();
 				});
 			}
@@ -219,7 +218,7 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 		}
 		else if (this.mode == 3) { // “热评”
 			superagent.get('http://cmt.ithome.com/api/comment/hotcommentlist/').end((err, res) => {
-				let commentList = res.body.content.commentlist
+				let commentList = res.body.content.commentlist;
 				for (let i in commentList) {
 					let time = new Date(commentList[i].Comment.T).toLocaleString('zh-CN');
 					let locLength = commentList[i].Comment.Y.length;
@@ -274,7 +273,7 @@ export function activate(context: vscode.ExtensionContext) {
 				config.update('account', hash, true).then(() => {
 					account.refresh();
 				});
-			})
+			});
 		}),
 		vscode.commands.registerCommand('ith2ome.logout', () => { // 退出通行证
 			userHash = '';
