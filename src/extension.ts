@@ -321,7 +321,7 @@ export function activate(context: vscode.ExtensionContext) {
 								let disagree = commentHTML.match(RegExp('反对\\(\\d+?\\)</a>', 'g'));
 								let commentAppend = '<h2>热门评论</h2><ul>';
 								for (let i in level)
-									commentAppend += `<li style="margin:1em 0em"><strong style="font-size:1.2em">${nick[i].match(RegExp('>.+?</a>', 'g'))[0].slice(1, -4)}</strong><sup>${level[i].slice(6, -7)}</sup><div style="float:right">${floor[i]}@${posandtime[i]}</div>${content[i].replace('<p>', '<p style="margin:0px">').replace(RegExp('<img', 'g'), '<img style="height:1.3em"')}<span style="color:#28BD98;margin-right:3em">${agree[i].slice(0, -4)}</span><span style="color:#FF6F6F">${disagree[i].slice(0, -4)}</span></li>`;
+									commentAppend += `<li style="margin:1em 0em"><strong style="font-size:1.2em">${nick[i].match(RegExp('>.+?</a>', 'g'))[0].slice(1, -4).replace(RegExp('src="//', 'g'), 'src="https://')}</strong><sup>${level[i].slice(6, -7)}</sup><div style="float:right">${floor[i]}@${posandtime[i]}</div>${content[i].replace('<p>', '<p style="margin:0px">').replace(RegExp('<img', 'g'), '<img style="height:1.3em"')}<span style="color:#28BD98;margin-right:3em">${agree[i].slice(0, -4)}</span><span style="color:#FF6F6F">${disagree[i].slice(0, -4)}</span></li>`;
 								panel!.webview.html = panel!.webview.html.replace('<h2>热门评论</h2>', commentAppend + '</ul>');
 							});
 							superagent.post('https://cmt.ithome.com/webapi/getcomment').send({ hash: newpagetype, pid: 1, order: commentOrder }).set('Content-Type', 'application/x-www-form-urlencoded').end((err5, res5) => {
