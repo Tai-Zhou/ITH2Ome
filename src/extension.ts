@@ -155,9 +155,9 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 		}
 		else if (this.mode == 1) { // “最新”
 			if (refreshType < 2) {
-				if (refreshType == 0) // 仅在手动刷新时更新最后阅读标记
+				if (lastReadId == 0 || refreshType == 0) // 仅在初始化和手动刷新时更新最后阅读标记
 					lastReadId = latestNewsId;
-				if (lastReadId < 0) // lastReadId < 0 表示最后阅读标记已插入，刷新时需设为正
+				else if (lastReadId < 0) // lastReadId < 0 表示最后阅读标记已插入，刷新时需设为正
 					lastReadId = -lastReadId;
 				superagent.get('https://api.ithome.com/json/newslist/news').end((err, res) => {
 					let topList = res.body.toplist;
