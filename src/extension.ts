@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import * as superagent from 'superagent';
 
+let extensionPath: string; // 插件路径
+let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
+let ithomEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏"]; // 之家表情包
 let config: vscode.WorkspaceConfiguration; // 所有设置信息
 let userHash: string; // 通行证 Cookie
 let signReminder: boolean; // 签到提醒
@@ -89,6 +93,60 @@ function newsFormat(news: any, icon: string): ith2omeItem {
 		command: new ith2omeShowContent(news.title, time, news.newsid),
 		shareInfo: `标题：${news.title}\n时间：${time}\n内容：${news.description}\n点击数：${news.hitcount}｜评论数：${news.commentcount}\n`
 	};
+}
+interface commentM {
+	C: string, // 内容
+	N: string, // 昵称
+	Ui: number, // ID
+	Y: string,
+	T: string, // 时间
+	S: number, // 支持
+	A: number, // 反对
+	Ta: string,
+	R: number,
+	Cl: number,
+	Ir: boolean,
+	SF: string, // 楼层
+	Ul: number, // 等级
+	Tl: number,
+	Rl: number,
+	PUi: number,
+	M: number,
+	Vip: number,
+	Cs: number,
+	HeadImg: string, // 头像
+	WT: string, // 简化时间
+	ClName: string, // 设备名
+	UserIndexUrl: string, // 用户页面
+	UserMesClass: string
+}
+
+interface commentJSON {
+	Hfc: number, // 回复数
+	M: commentM, // 评论
+	R: commentM[] // 回复
+}
+
+function commentItemFormat(HeadImg: string, Ui: number, N: string, Ul: number, SF: string, WT: string, C: string, S: number, A: number, Hfc: number = -1): string {
+	for (let i in ithomEmoji)
+		C = C.replace(RegExp('\\[' + ithomEmoji[i] + '\\]', 'g'), '<img style="height:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', ithomEmoji[i] + '.svg'))) + '\'>');
+	return `<li style="margin:1em 0em"><img style="float:left;height:4em;width:4em;border-radius:50%" src="${HeadImg}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null"><div style="margin-left:5em"><strong title="软媒通行证数字ID：${Ui}" style="font-size:1.2em">${N}</strong><sup>Lv.${Ul}</sup><div style="float:right">${SF} @ ${WT}</div><br>${C}<br>${Hfc > 0 ? `<span style="margin-right:3em">回复(${Hfc})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${S})</span><span style="color:#FF6F6F">反对(${A})</span></div>`;
+}
+
+function commentFormat(commentItem: commentJSON[], commentContent: string): string {
+	if (commentItem.length == 0)
+		return '';
+	for (let i in commentItem) {
+		commentContent += commentItemFormat(commentItem[i].M.HeadImg, commentItem[i].M.Ui, commentItem[i].M.N, commentItem[i].M.Ul, commentItem[i].M.SF, commentItem[i].M.WT, commentItem[i].M.C, commentItem[i].M.S, commentItem[i].M.A, commentItem[i].Hfc + commentItem[i].R?.length);
+		if (commentItem[i].R?.length > 0) {
+			commentContent += '<ul>'
+			for (let j in commentItem[i].R)
+				commentContent += commentItemFormat(commentItem[i].R[j].HeadImg, commentItem[i].R[j].Ui, commentItem[i].R[j].N, commentItem[i].R[j].Ul, commentItem[i].R[j].SF, commentItem[i].R[j].WT, commentItem[i].R[j].C, commentItem[i].R[j].S, commentItem[i].R[j].A) + '</li>';
+			commentContent += '</ul>'
+		}
+		commentContent += '</li>'
+	}
+	return '<hr>' + commentContent + '</ul>';
 }
 
 class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // 为 View 提供内容
@@ -251,9 +309,9 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 }
 
 export function activate(context: vscode.ExtensionContext) {
+	extensionPath = context.extensionPath;
 	refreshConfig();
 	period = <number>config.get('defaultPeriod'); // 仅在启动时从设置中读取
-	let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
 	let account = new contentProvider(0);
 	let latest = new contentProvider(1);
 	let hot = new contentProvider(2);
@@ -287,10 +345,12 @@ export function activate(context: vscode.ExtensionContext) {
 			account.refresh();
 		}),
 		vscode.commands.registerCommand('ith2ome.showContent', (title: string, time: string, id: number) => { // 显示新闻内容
-			if (panel)
+			if (panel) {
 				panel.reveal(vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined);
+				panel.title = title;
+			}
 			else
-				panel = vscode.window.createWebviewPanel('content', 'ITH2Ome：预览', { preserveFocus: true, viewColumn: vscode.ViewColumn.One });
+				panel = vscode.window.createWebviewPanel('ith2ome', title, { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
 			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((err, res) => {
 				panel!.webview.html = (res.body.btheme ? '<head><style>body{filter:grayscale(100%)}</style></head>' : '') + `<h1>${title}</h1><h3>新闻源：${res.body.newssource}（${res.body.newsauthor}）｜责编：${res.body.z}</h3><h4>${time}</h4>${showImages ? res.body.detail : res.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#')}`;
 				if (showRelated) { // 显示相关文章
@@ -304,50 +364,12 @@ export function activate(context: vscode.ExtensionContext) {
 					});
 				}
 				if (showComment) { // 显示网友评论
-					panel!.webview.html += '<hr><h2>热门评论</h2><hr><h2>最' + commentOrderWord + '评论</h2>';
-					superagent.get(`https://www.ithome.com/0/${Math.floor(id / 1000)}/${id % 1000}.htm`).end((err3, res3) => {
-						let md5 = res3.text.substr(res3.text.indexOf('data=') + 6, 16);
-						superagent.get('https://cmt.ithome.com/comment/' + md5).end((err4, res4) => {
-							let newpagetype = res4.text.substr(res4.text.indexOf('newpagetype') + 15, 16);
-							superagent.post('https://cmt.ithome.com/webapi/gethotcomment').send({ hash: newpagetype, pid: 1 }).set('Content-Type', 'application/x-www-form-urlencoded').end((err5, res5) => {
-								let commentHTML = JSON.parse(res5.text).html;
-								let level = commentHTML.match(RegExp('<span>Lv\\.\\d+?</span>', 'g'));
-								let floor = commentHTML.match(RegExp('<strong class=\\"p_floor\\">.+?</strong>', 'g'));
-								let nick = commentHTML.match(RegExp('<span class=\\"nick\\">[\\s\\S]+?</span>', 'g'));
-								let posandtime = commentHTML.match(RegExp('<span class=\\"posandtime\\">.+?</span>', 'g'));
-								let content = commentHTML.match(RegExp('<p>.+?</p>', 'g'));
-								let agree = commentHTML.match(RegExp('支持\\(\\d+?\\)</a>', 'g'));
-								let disagree = commentHTML.match(RegExp('反对\\(\\d+?\\)</a>', 'g'));
-								let commentAppend = '<h2>热门评论</h2><ul>';
-								for (let i in level)
-									commentAppend += `<li style="margin:1em 0em"><strong style="font-size:1.2em">${nick[i].match(RegExp('>.+?</a>', 'g'))[0].slice(1, -4).replace(RegExp('src="//', 'g'), 'src="https://')}</strong><sup>${level[i].slice(6, -7)}</sup><div style="float:right">${floor[i]}@${posandtime[i]}</div>${content[i].replace('<p>', '<p style="margin:0px">').replace(RegExp('<img', 'g'), '<img style="height:1.3em"')}<span style="color:#28BD98;margin-right:3em">${agree[i].slice(0, -4)}</span><span style="color:#FF6F6F">${disagree[i].slice(0, -4)}</span></li>`;
-								panel!.webview.html = panel!.webview.html.replace('<h2>热门评论</h2>', commentAppend + '</ul>');
-							});
-							superagent.post('https://cmt.ithome.com/webapi/getcomment').send({ hash: newpagetype, pid: 1, order: commentOrder }).set('Content-Type', 'application/x-www-form-urlencoded').end((err5, res5) => {
-								let level = res5.text.match(RegExp('<span>Lv\\.\\d+?</span>', 'g'));
-								let floor = res5.text.match(RegExp('<strong class=\\"p_floor\\">.+?</strong>', 'g'));
-								let nick = res5.text.match(RegExp('<span class=\\"nick\\">[\\s\\S]+?</span>', 'g'));
-								let posandtime = res5.text.match(RegExp('<span class=\\"posandtime\\">.+?</span>', 'g'));
-								let content = res5.text.match(RegExp('<p>.+?</p>', 'g'));
-								let agree = res5.text.match(RegExp('支持\\(\\d+?\\)</a>', 'g'));
-								let disagree = res5.text.match(RegExp('反对\\(\\d+?\\)</a>', 'g'));
-								let commentAppend = '<h2>最' + commentOrderWord + '评论</h2><ul>';
-								let reply = false;
-								for (let i in level) {
-									if (floor[i].slice(-10, -9) == '#') {
-										if (!reply)
-											commentAppend = commentAppend.slice(0, -5) + '<ul>';
-										reply = true;
-									}
-									else {
-										if (reply)
-											commentAppend += '</ul></li>';
-										reply = false;
-									}
-									commentAppend += `<li style="margin:1em 0em"><strong style="font-size:1.2em">${nick[i].match(RegExp('>.+?</a>', 'g'))[0].slice(1, -4)}</strong><sup>${level[i].slice(6, -7)}</sup><div style="float:right">${floor[i]}@${posandtime[i]}</div>${content[i].replace('<p>', '<p style="margin:0px">').replace(RegExp('<img', 'g'), '<img style="height:1.3em"')}<span style="color:#28BD98;margin-right:3em">${agree[i].slice(0, -4)}</span><span style="color:#FF6F6F">${disagree[i]!.slice(0, -4)}</span></li>`;
-								}
-								panel!.webview.html = panel!.webview.html.replace('<h2>最' + commentOrderWord + '评论</h2>', commentAppend + (reply ? '</ul></li>' : '') + '</ul>');
-							});
+					panel!.webview.html += '<hr><h2>评论区加载中</h2>';
+					superagent.get(`https://m.ithome.com/html/${id % 1000000}.htm`).end((err3, res3) => {
+						let NewsIDDes = res3.text.substr(res3.text.indexOf('NewsIDDes') + 11, 16);
+						superagent.get(`https://m.ithome.com/api/comment/newscommentlistget?NewsID=${NewsIDDes}${commentOrder ? '&Latest=1' : ''}`).end((err4, res4) => {
+							let commentJSON = JSON.parse(res4.text).Result;
+							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentJSON ? commentFormat(commentJSON.Tlist, '<h2>置顶评论</h2><ul>') + commentFormat(commentJSON.Hlist, '<h2>热门评论</h2><ul>') + commentFormat(commentJSON.Clist, '<h2>最' + commentOrderWord + '评论</h2><ul>') : '<hr><h2>暂无评论</h2>');
 						});
 					});
 				}
