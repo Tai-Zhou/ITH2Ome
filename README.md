@@ -10,7 +10,6 @@ IT之家第三方插件，划水特供版。
   * [视图](#视图)
   * [启动](#启动)
 * [账户与隐私](#账户与隐私)
-* [已知问题](#已知问题)
 * [更新日志](#更新日志)
 * [帮助本项目](#帮助本项目)
 * [许可证](#许可证)
@@ -42,11 +41,7 @@ IT之家第三方插件，划水特供版。
 5. 复制 `user=hash=` 之后的部分，例如 `user=hash=20110515TOPOSINF`，则复制 `20110515TOPOSINF`；
 6. 粘贴至插件输入框中，或是手动修改 `ith2ome.account` 设置。
 
-除上述 `Cookie` 外，本插件在**本地**不保存任何用户信息。本插件**不记录、上传、保存**任何用户使用数据。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。`VSCode` 插件市场发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
-
-## 已知问题
-
-待发掘。
+除上述 `Cookie` 外，本插件在本地**不保存**任何用户信息，**不记录、上传、保存**任何用户使用数据。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。[VSCode 插件市场](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
 
 ## 更新日志
 
@@ -54,7 +49,7 @@ IT之家第三方插件，划水特供版。
 
 ## 帮助本项目
 
-作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）的方法实现。首次接触 `TypeScript` 与 `VSCode` 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。作者会在学业之余维护更新本项目，还请您保持耐心。
+作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）的方法实现。首次接触 `TypeScript` 与 VSCode 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。作者会在学业之余维护更新本项目，还请您保持耐心。
 
 ## 许可证
 
