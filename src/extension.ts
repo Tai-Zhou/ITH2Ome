@@ -4,7 +4,7 @@ import * as superagent from 'superagent';
 
 let extensionPath: string; // 插件路径
 let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
-let ithomEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏"]; // 之家表情包
+let ithomEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏", "之家", "水库"]; // 之家表情包
 let config: vscode.WorkspaceConfiguration; // 所有设置信息
 let userHash: string; // 通行证 Cookie
 let signReminder: boolean; // 签到提醒
@@ -138,13 +138,13 @@ interface commentJSON {
 	R: commentM[] // 回复
 }
 
-function commentItemFormat(HeadImg: string, Ui: number, N: string, Ul: number, SF: string, WT: string, C: string, S: number, A: number, Hfc: number = -1): string {
+function commentItemFormat(HeadImg: string, Ui: number, N: string, Ul: number, SF: string, WT: string, C: string, S: number, A: number, Hfc: number = -1): string { // 生成评论
 	for (let i in ithomEmoji)
-		C = C.replace(RegExp('\\[' + ithomEmoji[i] + '\\]', 'g'), '<img style="height:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
+		C = C.replace(RegExp('\\[' + ithomEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
 	return '<li style="margin:1em 0em">' + (showAvatar ? `<img style="float:left;height:4em;width:4em;border-radius:50%" src="${HeadImg}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${Ui}" style="font-size:1.2em">${N}</strong><sup>Lv.${Ul}</sup><div style="float:right">${SF} @ ${WT}</div><br>${C}<br>${Hfc > 0 ? `<span style="margin-right:3em">回复(${Hfc})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${S})</span><span style="color:#FF6F6F">反对(${A})</span></div>`;
 }
 
-function commentFormat(commentItem: commentJSON[], commentContent: string): string {
+function commentFormat(commentItem: commentJSON[], commentContent: string): string { // 评论JSON生成列表
 	if (commentItem.length == 0)
 		return '';
 	for (let i in commentItem) {
@@ -356,16 +356,16 @@ export function activate(context: vscode.ExtensionContext) {
 			account.refresh();
 		}),
 		vscode.commands.registerCommand('ith2ome.showContent', (title: string, time: string, id: number) => { // 显示新闻内容
-			if (panel) {
+			if (panel) { // 若标签页已存在
 				panel.reveal(vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined);
 				panel.title = title.length > titleLength ? title.substring(0, titleLength) + '…' : title;
 			}
-			else {
+			else { // 若标签页未开启或已关闭
 				panel = vscode.window.createWebviewPanel('ith2ome', title.length > titleLength ? title.substring(0, titleLength) + '…' : title, { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
 				panel!.iconPath = vscode.Uri.file(path.join(extensionPath, 'img/icon.svg'));
 			}
-			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((errNews, resNews) => {
-				let videosList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g'));
+			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((errNews, resNews) => { // 获取新闻内容
+				let videosList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g')); // 匹配B站视频
 				let BVList: String[] = [];
 				for (let i in videosList) {
 					let BVID = videosList[i].match(RegExp('(?<=bvid=)[0-9a-z]+', 'i'));
@@ -376,7 +376,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style></head><h1>${title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${time}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
 				for (let i in BVList)
-					superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVList[i]).end((errVideo, resVideo) => {
+					superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVList[i]).end((errVideo, resVideo) => { // 加载B站视频信息
 						panel!.webview.html = panel!.webview.html.replace(RegExp('<div id="' + BVList[i] + '.*?</div>'), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVList[i] + `">哔哩哔哩视频：${resVideo.body.data.title}</a></h4>` + (imageWidth > 0 ? `<img src="${resVideo.body.data.pic}" alt="哔哩哔哩视频封面">` : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(resVideo.body.data.stat.view)}</td><td>${numberFormat(resVideo.body.data.stat.danmaku)}</td><td>${numberFormat(resVideo.body.data.stat.reply)}</td><td>${numberFormat(resVideo.body.data.stat.like)}</td><td>${numberFormat(resVideo.body.data.stat.coin)}</td><td>${numberFormat(resVideo.body.data.stat.favorite)}</td><td>${numberFormat(resVideo.body.data.stat.share)}</td><td>${new Date(resVideo.body.data.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em"><tr><td>` + (imageWidth > 0 ? `<img style="height:6em;width:6em;border-radius:50%" src="${resVideo.body.data.owner.face}"></br>` : '') + `<strong>${resVideo.body.data.owner.name}</strong></td><td><p style="white-space:pre-wrap;text-align:left">${resVideo.body.data.desc}</p></td></tr></table></div>`);
 					})
 				if (showRelated) { // 显示相关文章
