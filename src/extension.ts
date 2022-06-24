@@ -160,12 +160,12 @@ function commentFormat(commentItem: commentJSON[], commentContent: string): stri
 	return '<hr>' + commentContent + '</ul>';
 }
 
-class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // 为 View 提供内容
-	private update = new vscode.EventEmitter<vscode.TreeItem | void>(); // 用于触发刷新
+class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 View 提供内容
+	update = new vscode.EventEmitter<void>(); // 用于触发刷新
 	readonly onDidChangeTreeData = this.update.event;
-	private list: ith2omeItem[] = []; // 项目列表
-	private mode: number; // 工作模式，0 为“通行证”，1 为“最新”，2 为“热榜”，3 为“热评”
-	private refreshTimer: NodeJS.Timeout | undefined; // 自动刷新计时器
+	list: ith2omeItem[] = []; // 项目列表
+	mode: number; // 工作模式，0 为“通行证”，1 为“最新”，2 为“热榜”，3 为“热评”
+	refreshTimer: NodeJS.Timeout | undefined; // 自动刷新计时器
 
 	constructor(_mode: number) {
 		this.mode = _mode;
@@ -309,12 +309,12 @@ class contentProvider implements vscode.TreeDataProvider<vscode.TreeItem> { // �
 			this.refreshTimer = setTimeout(() => { this.refresh(); }, 86400000); // 设置自动刷新时间
 		}
 	}
-	getChildren(element?: vscode.TreeItem): vscode.TreeItem[] { // 获取项目列表
+	getChildren(element?: ith2omeItem): vscode.TreeItem[] { // 获取项目列表
 		if (element)
 			return [];
 		return this.list;
 	}
-	getTreeItem(element: vscode.TreeItem): vscode.TreeItem { // 获取项目
+	getTreeItem(element: ith2omeItem): vscode.TreeItem { // 获取项目
 		return element;
 	}
 }
@@ -363,6 +363,7 @@ export function activate(context: vscode.ExtensionContext) {
 			else { // 若标签页未开启或已关闭
 				panel = vscode.window.createWebviewPanel('ith2ome', title.length > titleLength ? title.substring(0, titleLength) + '…' : title, { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
 				panel!.iconPath = vscode.Uri.file(path.join(extensionPath, 'img/icon.svg'));
+				panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
 			}
 			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((errNews, resNews) => { // 获取新闻内容
 				let videosList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g')); // 匹配B站视频
@@ -374,7 +375,7 @@ export function activate(context: vscode.ExtensionContext) {
 						resNews.body.detail = resNews.body.detail.replace(RegExp('<iframe class="ithome_video bilibili".*?</iframe>'), '<div id="' + BVID + '" align="center"><h4><a href="https://www.bilibili.com/video/' + BVID + '">哔哩哔哩视频：信息加载中</a></h4></div>');
 					}
 				}
-				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style></head><h1>${title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${time}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img.*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
+				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style></head><h1>${title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${time}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
 				for (let i in BVList)
 					superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVList[i]).end((errVideo, resVideo) => { // 加载B站视频信息
 						panel!.webview.html = panel!.webview.html.replace(RegExp('<div id="' + BVList[i] + '.*?</div>'), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVList[i] + `">哔哩哔哩视频：${resVideo.body.data.title}</a></h4>` + (imageWidth > 0 ? `<img src="${resVideo.body.data.pic}" alt="哔哩哔哩视频封面">` : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(resVideo.body.data.stat.view)}</td><td>${numberFormat(resVideo.body.data.stat.danmaku)}</td><td>${numberFormat(resVideo.body.data.stat.reply)}</td><td>${numberFormat(resVideo.body.data.stat.like)}</td><td>${numberFormat(resVideo.body.data.stat.coin)}</td><td>${numberFormat(resVideo.body.data.stat.favorite)}</td><td>${numberFormat(resVideo.body.data.stat.share)}</td><td>${new Date(resVideo.body.data.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em"><tr><td>` + (imageWidth > 0 ? `<img style="height:6em;width:6em;border-radius:50%" src="${resVideo.body.data.owner.face}"></br>` : '') + `<strong>${resVideo.body.data.owner.name}</strong></td><td><p style="white-space:pre-wrap;text-align:left">${resVideo.body.data.desc}</p></td></tr></table></div>`);
@@ -400,7 +401,6 @@ export function activate(context: vscode.ExtensionContext) {
 					});
 				}
 			})
-			panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
 		}),
 		vscode.commands.registerCommand('ith2ome.share', (item: ith2omeItem) => { // 分享新闻
 			vscode.env.clipboard.writeText(item.shareInfo! + item.resourceUri).then(() => {

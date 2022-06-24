@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.4.1",
+	"version": "1.4.2",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -295,7 +295,5 @@
 		"vsce": "^1.88.0",
 		"vscode-test": "^1.5.0"
 	},
-	"dependencies": {
-		"superagent": "^6.1.0"
-	}
+	"dependencies": {}
 }
