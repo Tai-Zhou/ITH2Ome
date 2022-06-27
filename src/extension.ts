@@ -10,7 +10,8 @@ let userHash: string; // 通行证 Cookie
 let signReminder: boolean; // 签到提醒
 let showPreviewImages: boolean; // 显示图片
 let titleLength: number; // 显示图片
-let imageWidth: number; // 显示图片
+let imageWidth: number; // 显示图片宽度
+let videoWidth: number; // 显示视频宽度
 let showRelated: boolean; // 显示相关文章
 let showComment: boolean; // 显示网友评论
 let showAvatar: boolean; // 显示网友评论
@@ -38,6 +39,7 @@ function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	showPreviewImages = <boolean>config.get('showPreviewImages');
 	titleLength = Math.max(<number>config.get('titleLength'), 0);
 	imageWidth = <number>config.get('imageWidth');
+	videoWidth = <number>config.get('videoWidth');
 	showRelated = <boolean>config.get('showRelated');
 	showComment = <boolean>config.get('showComment');
 	showAvatar = <boolean>config.get('showAvatar');
@@ -91,7 +93,7 @@ function newsFormat(news: any, icon: string): ith2omeItem {
 	return {
 		label: { highlights: highlights, label: news.title },
 		contextValue: 'ith2ome.article',
-		iconPath: new vscode.ThemeIcon(icon.length == 7 && highlights.length ? 'lightbulb' : icon),
+		iconPath: new vscode.ThemeIcon(icon.length != 3 && highlights.length ? 'lightbulb' : icon),
 		id: icon + news.newsid,
 		description: time,
 		resourceUri: linkCheck(news.url),
@@ -243,7 +245,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], newsList[i].aid ? 'tag' : 'preview'));
+							this.list.push(newsFormat(newsList[i], newsList[i].aid ? 'tag' : (newsList[i].v ? 'device-camera-video' : 'preview')));
 					}
 					this.list.push({
 						label: '加载更多数据',
@@ -263,7 +265,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], newsList[i].url.search('lapin') != -1 ? 'tag' : 'preview'));
+							this.list.push(newsFormat(newsList[i], newsList[i].url.search('lapin') != -1 ? 'tag' : (newsList[i].v ? 'device-camera-video' : 'preview')));
 					}
 					this.list.push({
 						label: '加载更多数据',
@@ -366,20 +368,29 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
 			}
 			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((errNews, resNews) => { // 获取新闻内容
-				let videosList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g')); // 匹配B站视频
-				let BVList: String[] = [];
-				for (let i in videosList) {
-					let BVID = videosList[i].match(RegExp('(?<=bvid=)[0-9a-z]+', 'i'));
+				let BiliVideoList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g')); // 匹配B站视频
+				for (let i in BiliVideoList) {
+					let BVID = BiliVideoList[i].match(RegExp('(?<=bvid=)[0-9a-z]+', 'i'));
 					if (BVID) {
-						BVList.push(BVID);
-						resNews.body.detail = resNews.body.detail.replace(RegExp('<iframe class="ithome_video bilibili".*?</iframe>'), '<div id="' + BVID + '" align="center"><h4><a href="https://www.bilibili.com/video/' + BVID + '">哔哩哔哩视频：信息加载中</a></h4></div>');
+						resNews.body.detail = resNews.body.detail.replace(BiliVideoList[i], '<div id="' + BVID + '" align="center"><h4><a href="https://www.bilibili.com/video/' + BVID + '">哔哩哔哩视频：信息加载中</a></h4></div>');
+						superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVID).end((errBiliVideo, resBiliVideo) => { // 加载B站视频信息
+							let biliVideoData = resBiliVideo.body.data;
+							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="${BVID}.*?</div>`), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVID + `">哔哩哔哩视频：${biliVideoData.title}</a></h4>` + (imageWidth > 0 ? `<img src="${biliVideoData.pic}" alt="哔哩哔哩视频封面">` : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(biliVideoData.stat.view)}</td><td>${numberFormat(biliVideoData.stat.danmaku)}</td><td>${numberFormat(biliVideoData.stat.reply)}</td><td>${numberFormat(biliVideoData.stat.like)}</td><td>${numberFormat(biliVideoData.stat.coin)}</td><td>${numberFormat(biliVideoData.stat.favorite)}</td><td>${numberFormat(biliVideoData.stat.share)}</td><td>${new Date(biliVideoData.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr><td>` + (imageWidth > 0 ? `<img style="height:6em;width:6em;border-radius:50%" src="${biliVideoData.owner.face}"></br>` : '') + `<strong><a href="https://space.bilibili.com/${biliVideoData.owner.mid}">${biliVideoData.owner.name}</a></strong></td><td><p style="white-space:pre-wrap;text-align:left">${biliVideoData.desc}</p></td></tr></table></div>`);
+						});
+					}
+				}
+				let weiboVideoList = resNews.body.detail.match(RegExp('<a class="ithome_super_player".*?</a>', 'g')); // 匹配微博视频
+				for (let i in weiboVideoList) {
+					let weiboHref = weiboVideoList[i].match(RegExp('(?<=href=").*?(?=")'))[0];
+					if (weiboHref) {
+						resNews.body.detail = resNews.body.detail.replace(weiboVideoList[i], `<div id="weiboVideo-${i}" align="center"><h4><a href="` + weiboHref + '">微博视频：信息加载中</a></h4></div>');
+						superagent.get(weiboVideoList[i].match(RegExp('(?<=href=").*?(?=")'))[0].replace('weibo.com', 'm.weibo.cn')).end((errWeiboVideo, resWeiboVideo) => { // 加载微博视频信息
+							let weiboVideoData = JSON.parse(resWeiboVideo.text.match(RegExp('(?<=render_data = \\[)[\\s\\S]*?(?=\\]\\[0\\])'))![0]).status;
+							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="weiboVideo-${i}".*?</div>`), `<div align="center" style="border:solid#D13A34"><h4><a href="${weiboHref}">微博视频：${weiboVideoData.status_title}</a></h4>` + (videoWidth > 0 ? `<video controls="controls" style="max-width:100%;width:${videoWidth}px" poster="${weiboVideoData.page_info.page_pic.url}" src="${weiboVideoData.page_info.urls.mp4_720p_mp4}"></video>` : (imageWidth > 0 ? `<img src="${weiboVideoData.page_info.page_pic.url}" alt="微博视频封面">` : '')) + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>转发</th><th>评论</th><th>点赞</th><th>发布时间</th></tr><tr><td>${weiboVideoData.page_info.play_count}</td><td>${numberFormat(weiboVideoData.reposts_count)}</td><td>${numberFormat(weiboVideoData.comments_count)}</td><td>${numberFormat(weiboVideoData.attitudes_count)}</td><td>${new Date(weiboVideoData.created_at).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr><td style="width:6em">` + (imageWidth > 0 ? `<img style="height:6em;width:6em;border-radius:50%" src="${weiboVideoData.user.profile_image_url}">` : '') + `</td><td colspan="3"><p style="white-space:pre-wrap;text-align:left">${weiboVideoData.text}</p></td></tr><tr><td><strong><a href="${weiboVideoData.user.profile_url}">${weiboVideoData.user.screen_name}</a></strong></td><td>${weiboVideoData.user.follow_count}关注</td><td>${weiboVideoData.user.followers_count}粉丝</td><td>${weiboVideoData.user.statuses_count}微博</td></tr></table></div>`)
+						});
 					}
 				}
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style></head><h1>${title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${time}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
-				for (let i in BVList)
-					superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVList[i]).end((errVideo, resVideo) => { // 加载B站视频信息
-						panel!.webview.html = panel!.webview.html.replace(RegExp('<div id="' + BVList[i] + '.*?</div>'), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVList[i] + `">哔哩哔哩视频：${resVideo.body.data.title}</a></h4>` + (imageWidth > 0 ? `<img src="${resVideo.body.data.pic}" alt="哔哩哔哩视频封面">` : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(resVideo.body.data.stat.view)}</td><td>${numberFormat(resVideo.body.data.stat.danmaku)}</td><td>${numberFormat(resVideo.body.data.stat.reply)}</td><td>${numberFormat(resVideo.body.data.stat.like)}</td><td>${numberFormat(resVideo.body.data.stat.coin)}</td><td>${numberFormat(resVideo.body.data.stat.favorite)}</td><td>${numberFormat(resVideo.body.data.stat.share)}</td><td>${new Date(resVideo.body.data.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em"><tr><td>` + (imageWidth > 0 ? `<img style="height:6em;width:6em;border-radius:50%" src="${resVideo.body.data.owner.face}"></br>` : '') + `<strong>${resVideo.body.data.owner.name}</strong></td><td><p style="white-space:pre-wrap;text-align:left">${resVideo.body.data.desc}</p></td></tr></table></div>`);
-					})
 				if (showRelated) { // 显示相关文章
 					panel!.webview.html += `<hr><h2>相关文章</h2>`;
 					superagent.get(`https://api.ithome.com/json/tags/0${Math.floor(id / 1000)}/${id}.json`).responseType('text').end((errRelate, resRelate) => {
@@ -400,7 +411,7 @@ export function activate(context: vscode.ExtensionContext) {
 						});
 					});
 				}
-			})
+			});
 		}),
 		vscode.commands.registerCommand('ith2ome.share', (item: ith2omeItem) => { // 分享新闻
 			vscode.env.clipboard.writeText(item.shareInfo! + item.resourceUri).then(() => {

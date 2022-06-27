@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.4.2",
+	"version": "1.5.0",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -193,42 +193,47 @@
 				"ith2ome.signReminder": {
 					"type": "boolean",
 					"default": true,
-					"description": "未签到时是否提醒，默认设置为 true。"
+					"description": "未签到时是否提醒。"
 				},
 				"ith2ome.showPreviewImages": {
 					"type": "boolean",
 					"default": true,
-					"description": "预览内容时是否显示图片，默认设置为 true。"
+					"description": "预览内容时是否显示图片。"
 				},
 				"ith2ome.titleLength": {
 					"type": "integer",
 					"default": 15,
-					"description": "查看内容标签页标题长度，默认设置为 15。"
+					"description": "查看内容标签页标题长度。"
 				},
 				"ith2ome.imageWidth": {
 					"type": "integer",
-					"default": 1080,
-					"description": "查看内容时显示图片最大像素宽度，设置为 0 时不显示图片，默认设置为 true。"
+					"default": 1280,
+					"description": "查看内容时显示图片最大像素宽度，设置为 0 时不显示图片。"
+				},
+				"ith2ome.videoWidth": {
+					"type": "integer",
+					"default": 1280,
+					"description": "查看内容时显示视频最大像素宽度，设置为 0 时不显示视频。"
 				},
 				"ith2ome.showRelated": {
 					"type": "boolean",
 					"default": true,
-					"description": "查看内容时是否显示相关文章，默认设置为 true。"
+					"description": "查看内容时是否显示相关文章。"
 				},
 				"ith2ome.showComment": {
 					"type": "boolean",
 					"default": true,
-					"description": "查看内容时是否显示评论，默认设置为 true。"
+					"description": "查看内容时是否显示评论。"
 				},
 				"ith2ome.showAvatar": {
 					"type": "boolean",
 					"default": true,
-					"description": "查看评论时是否显示头像，默认设置为 true。"
+					"description": "查看评论时是否显示头像。"
 				},
 				"ith2ome.commentOrder": {
 					"type": "boolean",
 					"default": false,
-					"description": "查看内容时显示评论是否顺序，默认设置为 false，即最新在前。"
+					"description": "查看内容时显示评论是否顺序，默认设置为最新在前。"
 				},
 				"ith2ome.autoRefresh": {
 					"type": "integer",
@@ -261,7 +266,7 @@
 				"ith2ome.showThumbs": {
 					"type": "boolean",
 					"default": true,
-					"description": "“热评”是否显示点赞数，默认设置为 true。"
+					"description": "“热评”是否显示点赞数。"
 				}
 			}
 		}
