@@ -245,7 +245,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], newsList[i].aid ? 'tag' : (newsList[i].v ? 'device-camera-video' : 'preview')));
+							this.list.push(newsFormat(newsList[i], newsList[i].aid ? 'tag' : (newsList[i].v == '100' ? 'device-camera-video' : 'preview')));
 					}
 					this.list.push({
 						label: '加载更多数据',
@@ -265,7 +265,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 							lastReadId = -lastReadId;
 						}
 						if (show(newsList[i].title))
-							this.list.push(newsFormat(newsList[i], newsList[i].url.search('lapin') != -1 ? 'tag' : (newsList[i].v ? 'device-camera-video' : 'preview')));
+							this.list.push(newsFormat(newsList[i], newsList[i].url.search('lapin') != -1 ? 'tag' : (newsList[i].v == '100' ? 'device-camera-video' : 'preview')));
 					}
 					this.list.push({
 						label: '加载更多数据',
