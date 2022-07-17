@@ -407,7 +407,7 @@ export function activate(context: vscode.ExtensionContext) {
 						let NewsIDDes = resMobile.text.match(RegExp('(?<=NewsIDDes:")[0-9a-f]{16}', 'g'));
 						superagent.get(`https://m.ithome.com/api/comment/newscommentlistget?NewsID=${NewsIDDes}${commentOrder ? '&Latest=1' : ''}`).end((errComment, resComment) => {
 							let commentJSON = JSON.parse(resComment.text).Result;
-							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentJSON ? commentFormat(commentJSON.Tlist, '<h2>置顶评论</h2><ul>') + commentFormat(commentJSON.Hlist, '<h2>热门评论</h2><ul>') + commentFormat(commentJSON.Clist, '<h2>最' + commentOrderWord + '评论</h2><ul>') : '<hr><h2>暂无评论</h2>');
+							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentJSON && commentJSON.Clist.length ? commentFormat(commentJSON.Tlist, '<h2>置顶评论</h2><ul>') + commentFormat(commentJSON.Hlist, '<h2>热门评论</h2><ul>') + commentFormat(commentJSON.Clist, '<h2>最' + commentOrderWord + '评论</h2><ul>') : '<hr><h2>暂无评论</h2>');
 						});
 					});
 				}
