@@ -78,15 +78,6 @@ class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shar
 	shareInfo?: string;
 }
 
-class ith2omeShowContent implements vscode.Command { // 在 VSCode 中查看的命令，用于“最新”、“热榜”与“热评”
-	title = '查看内容';
-	command = 'ith2ome.showContent';
-	arguments: string[];
-	constructor(title: string, time: string, id: string) {
-		this.arguments = [title, time, id];
-	}
-}
-
 function newsFormat(news: any, icon: string): ith2omeItem {
 	let time = new Date(news.postdate).toLocaleString('zh-CN');
 	let highlights = highlight(news.title);
@@ -98,9 +89,24 @@ function newsFormat(news: any, icon: string): ith2omeItem {
 		description: time,
 		resourceUri: linkCheck(news.url),
 		tooltip: new vscode.MarkdownString(`**${news.title}**\n\n` + (showPreviewImages ? `![封面图](${news.image})` : '') + `\n\n*${time}*\n\n${news.description}\n\n点击数：${news.hitcount}｜评论数：${news.commentcount}`),
-		command: new ith2omeShowContent(news.title, time, news.newsid),
+		command: { title: '查看内容', command: 'ith2ome.showContent', arguments: [news.title, news.newsid] },
 		shareInfo: `标题：${news.title}\n时间：${time}\n内容：${news.description}\n点击数：${news.hitcount}｜评论数：${news.commentcount}\n`
 	};
+}
+
+function titleFormat(title: string): string {
+	return title.length > titleLength ? title.substring(0, titleLength) + '…' : title;
+}
+
+function linkFormat(text: string): string {
+	let linkList = text.match(RegExp('<a href="https://www.ithome.com.*?</a>', 'g')); // 匹配之家文章链接
+	for (let i in linkList) {
+		let title = linkList[i].match(RegExp('(?<=>).*?(?=<)'))[0];
+		let href = linkList[i].match(RegExp('(?<=href=").*?(?=")'))[0];
+		let id = href.match(RegExp('(?<=0/).*?(?=\\.htm)'))[0].replace('/', '');
+		text = text.replace(linkList[i], `<a href="" onclick="ITH2OmeOpen('${title}',${id});">${title}</a>`);
+	}
+	return text;
 }
 
 function numberFormat(num: number): string {
@@ -143,7 +149,7 @@ interface commentJSON {
 function commentItemFormat(HeadImg: string, Ui: number, N: string, Ul: number, SF: string, WT: string, C: string, S: number, A: number, Hfc: number = -1): string { // 生成评论
 	for (let i in ithomEmoji)
 		C = C.replace(RegExp('\\[' + ithomEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img style="float:left;height:4em;width:4em;border-radius:50%" src="${HeadImg}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${Ui}" style="font-size:1.2em">${N}</strong><sup>Lv.${Ul}</sup><div style="float:right">${SF} @ ${WT}</div><br>${C}<br>${Hfc > 0 ? `<span style="margin-right:3em">回复(${Hfc})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${S})</span><span style="color:#FF6F6F">反对(${A})</span></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img style="float:left;height:4em;width:4em;border-radius:50%" src="${HeadImg}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${Ui}" style="font-size:1.2em">${N}</strong><sup>Lv.${Ul}</sup><div style="float:right">${SF} @ ${WT}</div><br>${linkFormat(C)}<br>${Hfc > 0 ? `<span style="margin-right:3em">回复(${Hfc})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${S})</span><span style="color:#FF6F6F">反对(${A})</span></div>`;
 }
 
 function commentFormat(commentItem: commentJSON[], commentContent: string): string { // 评论JSON生成列表
@@ -302,7 +308,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 						description: time,
 						resourceUri: linkCheck(commentList[i].News.NewsLink),
 						tooltip: new vscode.MarkdownString(`*${commentList[i].Comment.C.replace(RegExp('[\n]+', 'g'), '*\n\n*')}*\n\n**${commentList[i].News.NewsTitle}**\n\n*${time}*\n\n${user}`),
-						command: new ith2omeShowContent(commentList[i].News.NewsTitle, '', commentList[i].News.NewsId),
+						command: { title: '查看内容', command: 'ith2ome.showContent', arguments: [commentList[i].News.NewsTitle, commentList[i].News.NewsId] },
 						shareInfo: `${commentList[i].Comment.C}\n\n标题：${commentList[i].News.NewsTitle}\n时间：${time}\n用户：${user}\n`
 					});
 				}
@@ -357,17 +363,29 @@ export function activate(context: vscode.ExtensionContext) {
 			refreshConfig();
 			account.refresh();
 		}),
-		vscode.commands.registerCommand('ith2ome.showContent', (title: string, time: string, id: number) => { // 显示新闻内容
+		vscode.commands.registerCommand('ith2ome.showContent', (title: string, id: number) => { // 显示新闻内容
 			if (panel) { // 若标签页已存在
 				panel.reveal(vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined);
-				panel.title = title.length > titleLength ? title.substring(0, titleLength) + '…' : title;
+				panel.title = titleFormat(title);
 			}
 			else { // 若标签页未开启或已关闭
-				panel = vscode.window.createWebviewPanel('ith2ome', title.length > titleLength ? title.substring(0, titleLength) + '…' : title, { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
-				panel!.iconPath = vscode.Uri.file(path.join(extensionPath, 'img/icon.svg'));
+				panel = vscode.window.createWebviewPanel('ith2ome', titleFormat(title), { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
+				panel.iconPath = vscode.Uri.file(path.join(extensionPath, 'img/icon.svg'));
+				panel.webview.onDidReceiveMessage(
+					message => {
+						switch (message.command) {
+							case 'relate':
+								vscode.commands.executeCommand('ith2ome.showContent', message.title, message.id);
+								return;
+						}
+					},
+					undefined,
+					context.subscriptions
+				);
 				panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
 			}
 			superagent.get('https://api.ithome.com/json/newscontent/' + id).end((errNews, resNews) => { // 获取新闻内容
+				panel!.title = titleFormat(resNews.body.title);
 				let BiliVideoList = resNews.body.detail.match(RegExp('<iframe class="ithome_video bilibili".*?</iframe>', 'g')); // 匹配B站视频
 				for (let i in BiliVideoList) {
 					let BVID = BiliVideoList[i].match(RegExp('(?<=bvid=)[0-9a-z]+', 'i'));
@@ -390,14 +408,15 @@ export function activate(context: vscode.ExtensionContext) {
 						});
 					}
 				}
-				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style></head><h1>${title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${time}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
+				resNews.body.detail = linkFormat(resNews.body.detail); // 匹配之家文章链接
+				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style><script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:'relate',title,id});}</script></head><h1>${resNews.body.title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
 				if (showRelated) { // 显示相关文章
 					panel!.webview.html += `<hr><h2>相关文章</h2>`;
 					superagent.get(`https://api.ithome.com/json/tags/0${Math.floor(id / 1000)}/${id}.json`).responseType('text').end((errRelate, resRelate) => {
 						let text = '<h2>相关文章</h2><ul>';
 						let relateList = JSON.parse(resRelate.body.toString().substring(16));
 						for (let i in relateList)
-							text += `<li><a href="${relateList[i].url}">${relateList[i].newstitle}</a></li>`;
+							text += `<li><a href="" onclick="ITH2OmeOpen('${relateList[i].newstitle}',${relateList[i].newsid});">${relateList[i].newstitle}</a></li>`;
 						panel!.webview.html = panel!.webview.html.replace('<h2>相关文章</h2>', text + '</ul>');
 					});
 				}
