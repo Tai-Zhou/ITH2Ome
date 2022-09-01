@@ -2,11 +2,15 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.6.0",
+	"version": "1.6.1",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Tai-Zhou/ITH2Ome.git"
+	},
+	"qna": "https://github.com/Tai-Zhou/ITH2Ome/discussions",
+	"bugs": {
+		"url": "https://github.com/Tai-Zhou/ITH2Ome/issues"
 	},
 	"license": "MIT",
 	"keywords": [
@@ -30,6 +34,9 @@
 		"onView:ith2ome.comment"
 	],
 	"main": "./out/main.js",
+	"extensionKind": [
+		"ui"
+	],
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
