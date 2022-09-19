@@ -408,6 +408,13 @@ export function activate(context: vscode.ExtensionContext) {
 						});
 					}
 				}
+				let miaopaiVideoList = resNews.body.detail.match(RegExp('<iframe class="ithome_video" src="https://v\\.miaopai\\.com.*?</iframe>', 'g')); // 匹配秒拍视频
+				for (let i in miaopaiVideoList) {
+					let miaopaiHref = miaopaiVideoList[i].match(RegExp('(?<=src=").*?(?=")'))[0];
+					let miaopaiScid = miaopaiHref.match(RegExp('(?<=scid=).*'))[0];
+					if (miaopaiHref && miaopaiScid)
+						resNews.body.detail = resNews.body.detail.replace(miaopaiVideoList[i], `<div align="center" style="border:solid#FCEA4F"><h4><a href="${miaopaiHref}">秒拍视频</a></h4>` + (videoWidth > 0 ? `<video controls="controls" style="max-width:100%;width:${videoWidth}px" poster="http://imgaliyuncdn.miaopai.com/stream/${miaopaiScid}_m.jpg" src="https://gslb.miaopai.com/stream/${miaopaiScid}.mp4"></video>` : '#视频已屏蔽#') + '</div>'); // 替换秒拍视频信息
+				}
 				resNews.body.detail = linkFormat(resNews.body.detail); // 匹配之家文章链接
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style><script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:'relate',title,id});}</script></head><h1>${resNews.body.title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
 				if (showRelated) { // 显示相关文章
