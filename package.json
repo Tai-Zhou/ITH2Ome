@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.6.2",
+	"version": "1.6.3",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -22,7 +22,7 @@
 	"publisher": "astro-tai",
 	"icon": "img/icon.png",
 	"engines": {
-		"vscode": "^1.55.0"
+		"vscode": "^1.74.0"
 	},
 	"categories": [
 		"Other"
@@ -291,17 +291,17 @@
 		"deploy": "vsce publish"
 	},
 	"dependencies": {
-		"superagent": "^8.0.0",
-		"typescript": "^4.7.4",
-		"vsce": "^2.9.3"
+		"@vscode/vsce": "^2.16.0",
+		"superagent": "^8.0.6",
+		"typescript": "^4.9.4"
 	},
 	"devDependencies": {
-		"@types/node": "^18.0.4",
-		"@types/superagent": "^4.1.11",
-		"@types/vscode": "^1.55.0",
-		"@typescript-eslint/eslint-plugin": "^5.30.6",
-		"@typescript-eslint/parser": "^5.30.6",
-		"esbuild": "^0.14.49",
-		"eslint": "^8.19.0"
+		"@types/node": "^18.11.18",
+		"@types/superagent": "^4.1.16",
+		"@types/vscode": "^1.74.0",
+		"@typescript-eslint/eslint-plugin": "^5.48.0",
+		"@typescript-eslint/parser": "^5.48.0",
+		"esbuild": "^0.14.54",
+		"eslint": "^8.31.0"
 	}
 }
