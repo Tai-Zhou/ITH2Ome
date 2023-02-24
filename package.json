@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.6.3",
+	"version": "1.7.0",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -27,12 +27,7 @@
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [
-		"onView:ith2ome.account",
-		"onView:ith2ome.latest",
-		"onView:ith2ome.hot",
-		"onView:ith2ome.comment"
-	],
+	"activationEvents": [],
 	"main": "./out/main.js",
 	"extensionKind": [
 		"ui"
