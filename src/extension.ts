@@ -24,6 +24,7 @@ let blockWords: string[]; // 屏蔽词列表
 let period: number; // “热榜”榜单，仅在启动时从设置中读取
 const periodDic = ['48', 'weekhot', 'weekcomment', 'month']; // “热榜”榜单字典
 let showThumbs: boolean; // “热评”显示点赞数
+let hideAdTips: boolean; // 查看内容隐藏广告声明
 let latestNewsId: number = 0; // “最新”最新消息标记，用于显示上次阅读位置
 let lastReadId: number = 0; // “最新”最后阅读标记，用于显示上次阅读位置
 const lastRead: vscode.TreeItem = {
@@ -52,6 +53,7 @@ function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 		keysLength[i] = keyWords[i].length;
 	blockWords = <string[]>config.get('blockWords');
 	showThumbs = <boolean>config.get('showThumbs');
+	hideAdTips = <boolean>config.get('hideAdTips');
 }
 
 function show(title: string): boolean { // 返回是否显示该条新闻
@@ -101,10 +103,10 @@ function titleFormat(title: string): string {
 function linkFormat(text: string): string {
 	let linkList = text.match(RegExp('<a href="https://www.ithome.com.*?</a>', 'g')); // 匹配之家文章链接
 	for (let i in linkList) {
-		let title = linkList[i].match(RegExp('(?<=>).*?(?=<)'))[0];
-		let href = linkList[i].match(RegExp('(?<=href=").*?(?=")'))[0];
+		let title = (linkList as any)[i].match(RegExp('(?<=>).*?(?=<)'))[0];
+		let href = (linkList as any)[i].match(RegExp('(?<=href=").*?(?=")'))[0];
 		let id = href.match(RegExp('(?<=0/).*?(?=\\.htm)'))[0].replace('/', '');
-		text = text.replace(linkList[i], `<a href="" onclick="ITH2OmeOpen('${title}',${id});">${title}</a>`);
+		text = text.replace((linkList as any)[i], `<a href="" onclick="ITH2OmeOpen('${title}',${id});">${title}</a>`);
 	}
 	return text;
 }
@@ -135,10 +137,15 @@ interface commentElementJSON {
 	width: number,
 }
 
+interface commentPictureJSON {
+	src: string,
+}
+
 interface commentJSON {
-	against: number,
+	against: number, // 反对
 	checkStatus: number,
 	children: commentJSON[], // 回复评论
+	city: string, // 城市
 	editRole: any,
 	editStatus: number,
 	editStatusStr: any,
@@ -146,15 +153,16 @@ interface commentJSON {
 	elements: commentElementJSON[],
 	expandCount: number,
 	floorStr: string, // 楼层
-	id: number,
+	id: number, // 评论id
 	paragraphId: any,
 	parentCommentId: number,
+	pictures: commentPictureJSON[], // 图片
 	postTime: string, // 评论时间
-	referTest: string, // 引文
-	replyCommentId: number,
-	replyFloorStr: string,
-	replyUserInfo: userInfo,
-	support: number,
+	referText: string, // 引文
+	replyCommentId: number, // 回复评论id
+	replyFloorStr: string, // 回复楼层
+	replyUserInfo: userInfo, // 回复用户信息
+	support: number, // 支持
 	userInfo: userInfo, // 用户信息
 	voteStatus: number,
 }
@@ -163,10 +171,22 @@ function commentReplayFormt(comment: commentJSON) { // 生成回复
 	return `回复 ${comment.replyFloorStr} <strong>${comment.replyUserInfo.userNick}</strong>：`
 }
 
+function commentPictureFormat(pictures: commentPictureJSON[]) {
+	if (!pictures)
+		return "";
+	let content = "";
+	for (let picture of pictures)
+		if (imageWidth > 0)
+			content += `<img src="${atob(picture.src)}"/>`
+		else
+			content += '#图片已屏蔽#'
+	return content + '<br>'
+}
+
 function commentItemFormat(comment: commentJSON): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img style="float:left;height:4em;width:4em;border-radius:50%" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong><sup>Lv.${comment.userInfo.level}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${comment.support})</span><span style="color:#FF6F6F">反对(${comment.against})</span></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img style="float:left;height:4em;width:4em;border-radius:50%" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${comment.support})</span><span style="color:#FF6F6F">反对(${comment.against})</span></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentContent: string): string { // 评论JSON生成列表
@@ -277,8 +297,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 					});
 					this.update.fire();
 				});
-			}
-			else { // 加载更多数据
+			} else { // 加载更多数据
 				this.list.pop();
 				superagent.get('https://m.ithome.com/api/news/newslistpageget?ot=' + refreshType).end((err, res) => {
 					let newsList = res.body.Result;
@@ -300,8 +319,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 			}
 			if (autoRefresh > 0)
 				this.refreshTimer = setTimeout(() => { this.refresh(1); }, autoRefresh * 1000); // 设置自动刷新时间
-		}
-		else if (this.mode == 2) { // “热榜”
+		} else if (this.mode == 2) { // “热榜”
 			superagent.get('https://api.ithome.com/json/newslist/rank').end((err, res) => {
 				let rankList = res.body['channel' + periodDic[period] + 'rank'];
 				for (let i in rankList)
@@ -309,8 +327,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 				this.update.fire();
 			});
 			this.refreshTimer = setTimeout(() => { this.refresh(); }, 86400000); // 设置自动刷新时间
-		}
-		else if (this.mode == 3) { // “热评”
+		} else if (this.mode == 3) { // “热评”
 			superagent.get('http://cmt.ithome.com/api/comment/hotcommentlist/').end((err, res) => {
 				let commentList = res.body.content.commentlist;
 				for (let i in commentList) {
@@ -384,8 +401,7 @@ export function activate(context: vscode.ExtensionContext) {
 			if (panel) { // 若标签页已存在
 				panel.reveal(vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined);
 				panel.title = titleFormat(title);
-			}
-			else { // 若标签页未开启或已关闭
+			} else { // 若标签页未开启或已关闭
 				panel = vscode.window.createWebviewPanel('ith2ome', titleFormat(title), { preserveFocus: true, viewColumn: vscode.ViewColumn.One }, { enableScripts: true });
 				panel.iconPath = vscode.Uri.file(path.join(extensionPath, 'img/icon.svg'));
 				panel.webview.onDidReceiveMessage(
@@ -441,6 +457,8 @@ export function activate(context: vscode.ExtensionContext) {
 						resNews.body.detail = resNews.body.detail.replace(miaopaiVideoList[i], `<div align="center" style="border:solid#FCEA4F"><h4><a href="${miaopaiHref}">秒拍视频</a></h4>` + (videoWidth > 0 ? `<video controls="controls" style="max-width:100%;width:${videoWidth}px" poster="http://imgaliyuncdn.miaopai.com/stream/${miaopaiScid}_m.jpg" src="https://gslb.miaopai.com/stream/${miaopaiScid}.mp4"></video>` : '#视频已屏蔽#') + '</div>'); // 替换秒拍视频信息
 				}
 				resNews.body.detail = linkFormat(resNews.body.detail); // 匹配之家文章链接
+				if (hideAdTips)
+					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` : '') + `</style><script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:'relate',title,id});}</script></head><h1>${resNews.body.title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4><div style="position:sticky;top:0px"><button style="position:absolute;right:1rem;margin-top:90vh;" onclick="window.scrollTo({top:0,behavior:'smooth'});">回到顶部</button></div>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : resNews.body.detail}`;
 				if (showRelated) { // 显示相关文章
 					panel!.webview.html += `<hr><h2>相关文章</h2>`;
@@ -456,7 +474,7 @@ export function activate(context: vscode.ExtensionContext) {
 					panel!.webview.html += '<hr><h2>评论区加载中</h2>';
 					superagent.get(`https://www.ithome.com/0/${Math.floor(id / 1000)}/${id % 1000}.htm`).end((errComment, resComment) => {
 						let commentSN = resComment.text.match(RegExp('(?<=data-id=")[0-9a-f]{16}', 'g'));
-						superagent.get(`https://cmt.ithome.com/api/webcomment/getnewscomment?sn=${commentSN}&isInit=true${commentOrder ? '&latest=1' : ''}`).end((errComment, resComment) => {
+						superagent.get(`https://cmt.ithome.com/api/webcomment/getnewscomment?sn=${commentSN}&isInit=true&appver=868${commentOrder ? '&latest=1' : ''}`).end((errComment, resComment) => {
 							let commentJSON = JSON.parse(resComment.text);
 							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentJSON && commentJSON.content.comments.length ? commentFormat(commentJSON.content.topComments, '<h2>置顶评论</h2><ul>') + commentFormat(commentJSON.content.hotComments, '<h2>热门评论</h2><ul>') + commentFormat(commentJSON.content.comments, '<h2>最' + commentOrderWord + '评论</h2><ul>') : '<hr><h2>暂无评论</h2>');
 						});
@@ -474,6 +492,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 		vscode.commands.registerCommand('ith2ome.latestRefresh', (refreshType: number) => { // 刷新“最新”
 			refreshConfig();
+			if (typeof refreshType != 'number')
+				refreshType = 0; // 有时 VSCode 会返回一个 ith2omeItem，原因不明
 			latest.refresh(refreshType);
 		}),
 		vscode.commands.registerCommand('ith2ome.hotRefresh', () => { // 刷新“热榜”
