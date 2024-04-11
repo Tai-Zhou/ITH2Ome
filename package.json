@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.9.0",
+	"version": "1.9.1",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -210,7 +210,12 @@
 				"ith2ome.imageWidth": {
 					"type": "integer",
 					"default": 1280,
-					"description": "查看内容时显示图片最大像素宽度，设置为 0 时不显示图片。"
+					"description": "查看内容时正文显示图片最大像素宽度，设置为 0 时不显示图片。"
+				},
+				"ith2ome.imageScale": {
+					"type": "number",
+					"default": 1.0,
+					"description": "查看内容时鼠标悬浮于正文图片上时的缩放倍数，设置为 1.0 时不放大图片。"
 				},
 				"ith2ome.videoWidth": {
 					"type": "integer",
@@ -231,6 +236,16 @@
 					"type": "boolean",
 					"default": true,
 					"description": "查看评论时是否显示头像。"
+				},
+				"ith2ome.commentImageWidth": {
+					"type": "integer",
+					"default": 320,
+					"description": "查看评论时显示评论图片最大像素宽度，设置为 0 时不显示图片。"
+				},
+				"ith2ome.commentImageScale": {
+					"type": "number",
+					"default": 2.0,
+					"description": "查看评论时鼠标悬浮于评论图片上时的缩放倍数，设置为 1.0 时不放大图片。"
 				},
 				"ith2ome.commentOrder": {
 					"type": "boolean",
@@ -256,7 +271,7 @@
 				"ith2ome.blockWords": {
 					"type": "array",
 					"default": [
-						"iPhone 16"
+						"技嘉"
 					],
 					"description": "屏蔽词列表，标题含有屏蔽词时将不显示在“最新”列表内。"
 				},
