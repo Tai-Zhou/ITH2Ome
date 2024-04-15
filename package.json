@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.9.1",
+	"version": "1.9.2",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -215,7 +215,12 @@
 				"ith2ome.imageScale": {
 					"type": "number",
 					"default": 1.0,
-					"description": "查看内容时鼠标悬浮于正文图片上时的缩放倍数，设置为 1.0 时不放大图片。"
+					"description": "查看内容时正文图片的缩放倍数，设置为 1.0 时不放大图片。"
+				},
+				"ith2ome.imageScaleMethod": {
+					"type": "integer",
+					"default": 0,
+					"description": "图片缩放的触发方式，设置为 0 时为鼠标悬浮，1 为长按，2 为点击。"
 				},
 				"ith2ome.videoWidth": {
 					"type": "integer",
@@ -245,7 +250,7 @@
 				"ith2ome.commentImageScale": {
 					"type": "number",
 					"default": 2.0,
-					"description": "查看评论时鼠标悬浮于评论图片上时的缩放倍数，设置为 1.0 时不放大图片。"
+					"description": "查看评论时评论图片的缩放倍数，设置为 1.0 时不放大图片。"
 				},
 				"ith2ome.commentOrder": {
 					"type": "boolean",
@@ -260,11 +265,11 @@
 				"ith2ome.keyWords": {
 					"type": "array",
 					"default": [
-						"微软承认",
-						"14nm",
-						"长征五号",
+						"承认",
 						"喜加一",
-						"垄断"
+						"垄断",
+						"航天",
+						"C919"
 					],
 					"description": "关键词列表，会在标题列表内强调显示。"
 				},
