@@ -202,9 +202,10 @@ function commentItemFormat(comment: commentJSON): string { // 生成评论
 	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${comment.support})</span><span style="color:#FF6F6F">反对(${comment.against})</span></div>`;
 }
 
-function commentFormat(commentList: commentJSON[], commentContent: string): string { // 评论JSON生成列表
+function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
 	if (commentList.length == 0)
 		return '';
+	let commentContent = `<h2>${commentTitle}</h2><ul>`;
 	for (let comment of commentList) {
 		commentContent += commentItemFormat(comment);
 		if (comment.children.length > 0) {
@@ -420,7 +421,7 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.webview.onDidReceiveMessage(
 					message => {
 						switch (message.command) {
-							case 'relate':
+							case 'openRelate':
 								vscode.commands.executeCommand('ith2ome.showContent', message.title, message.id);
 								return;
 						}
@@ -472,7 +473,17 @@ export function activate(context: vscode.ExtensionContext) {
 				resNews.body.detail = linkFormat(resNews.body.detail); // 匹配之家文章链接
 				if (hideAdTips)
 					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
-				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') + (imageWidth > 0 ? `img{width:${imageWidth}px}` + (imageScaleMethod < 2 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale});transition-duration:0.5s}` : '') : '') + (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') + `img.avatar{float:left;height:4em;width:4em;border-radius:50%;transform:none}img.video-avatar{height:6em;width:6em;border-radius:50%;transform:none}</style><script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:'relate',title,id});}function zoomImage(image){if(image.style.transform&&image.style.transform!="scale(1)")image.style.transform="scale(1)";else if(image.className.includes("comment"))image.style.transform="scale(${commentImageScale})";else image.style.transform="scale(${imageScale})";}</script></head><h1>${resNews.body.title}</h1><h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3><h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4><div style="position:sticky;top:0px"><button style="position:absolute;right:1rem;margin-top:90vh;" onclick="window.scrollTo({top:0,behavior:'smooth'});">回到顶部</button></div>${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : (imageScaleMethod == 2 ? resNews.body.detail.replace(RegExp('<img ', 'g'), '<img onclick="zoomImage(this)"') : resNews.body.detail)}`;
+				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
+					+ (imageWidth > 0 ? `img{width:${imageWidth}px}` + (imageScaleMethod < 2 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale});transition-duration:0.5s}` : '') : '') // 正文图片宽度、缩放
+					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
+					+ 'img.avatar{float:left;height:4em;width:4em;border-radius:50%;transform:none}img.video-avatar{height:6em;width:6em;border-radius:50%;transform:none}</style>' // 头像样式
+					+ '<script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:"openRelate",title,id});}' // 打开相关文章
+					+ `function zoomImage(image){if(image.style.transform&&image.style.transform!="scale(1)")image.style.transform="scale(1)";else if(image.className.includes("comment"))image.style.transform="scale(${commentImageScale})";else image.style.transform="scale(${imageScale})";}</script>` // 点击缩放图片
+					+ `</head><h1>${resNews.body.title}</h1>` // 标题
+					+ `<h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3>` // 新闻源、责编
+					+ `<h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4>` // 发布时间
+					+ '<div style="position:sticky;top:0px"><button style="position:absolute;right:1rem;margin-top:90vh;" onclick="window.scrollTo({top:0,behavior:\'smooth\'});">回到顶部</button></div>' // 回到顶部按钮
+					+ `${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : (imageScaleMethod == 2 ? resNews.body.detail.replace(RegExp('<img ', 'g'), '<img onclick="zoomImage(this)"') : resNews.body.detail)}`; // 图片屏蔽/添加缩放命令
 				if (showRelated) { // 显示相关文章
 					panel!.webview.html += `<hr><h2>相关文章</h2>`;
 					superagent.get(`https://napi.ithome.com/api/news/getrelatednews/${id}`).end((errRelate, resRelate) => {
@@ -489,7 +500,10 @@ export function activate(context: vscode.ExtensionContext) {
 						let commentSN = resComment.text.match(RegExp('(?<=data-id=")[0-9a-f]{16}', 'g'));
 						superagent.get(`https://cmt.ithome.com/api/webcomment/getnewscomment?sn=${commentSN}&isInit=true&appver=868${commentOrder ? '&latest=1' : ''}`).end((errComment, resComment) => {
 							let commentJSON = JSON.parse(resComment.text);
-							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentJSON && commentJSON.content.comments.length ? commentFormat(commentJSON.content.topComments, '<h2>置顶评论</h2><ul>') + commentFormat(commentJSON.content.hotComments, '<h2>热门评论</h2><ul>') + commentFormat(commentJSON.content.comments, '<h2>最' + commentOrderWord + '评论</h2><ul>') : '<hr><h2>暂无评论</h2>');
+							if (commentJSON && commentJSON.content.topComments.length + commentJSON.content.hotComments.length + commentJSON.content.comments.length > 0)
+								panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentFormat(commentJSON.content.topComments, '置顶评论') + commentFormat(commentJSON.content.hotComments, '热门评论') + commentFormat(commentJSON.content.comments, '最' + commentOrderWord + '评论'));
+							else
+								panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', '<hr><h2>暂无评论</h2>');
 						});
 					});
 				}
