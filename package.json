@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.9.3",
+	"version": "1.9.4",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -290,10 +290,15 @@
 					"default": true,
 					"description": "“热评”是否显示点赞数。"
 				},
+				"ith2ome.hideAd": {
+					"type": "boolean",
+					"default": false,
+					"description": "“最新”列表是否隐藏广告文章。"
+				},
 				"ith2ome.hideAdTips": {
 					"type": "boolean",
 					"default": true,
-					"description": "查看内容是否隐藏广告声明"
+					"description": "查看内容是否隐藏广告声明。"
 				}
 			}
 		}
