@@ -487,7 +487,7 @@ export function activate(context: vscode.ExtensionContext) {
 				if (hideAdTips)
 					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
-					+ (imageWidth > 0 ? `img{width:${imageWidth}px}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale});transition-duration:0.5s}` : '') : '') // 正文图片宽度、缩放
+					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition-duration:0.5s}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
 					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 && commentImageScale != 1.0 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
 					+ 'img.avatar{float:left;height:4em;width:4em;border-radius:50%;transform:none}img.video-avatar{height:6em;width:6em;border-radius:50%;transform:none}' // 头像样式
 					+ '#scroll-to-top{position:absolute;width:40px;height:40px;right:5px;margin-top:calc(100vh - 65px);background-color:var(--vscode-button-background,#444);border-color:var(--vscode-button-border);border-radius:50%;cursor:pointer;box-shadow:1px 1px 1px rgba(0,0,0,.25);outline:none;display:flex;justify-content:center;align-items:center;}' // 回到顶部按钮样式
