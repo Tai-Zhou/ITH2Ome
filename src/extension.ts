@@ -599,7 +599,7 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('ith2ome.latestRefresh', (refreshType: number) => { // 刷新“最新”
 			refreshConfig();
 			if (typeof refreshType != 'number')
-				refreshType = 0; // 有时 VSCode 会返回一个 ith2omeItem，原因不明
+				refreshType = 0; // 有时 VS Code 会返回一个 ith2omeItem，原因不明
 			latest.refresh(refreshType);
 		}),
 		vscode.commands.registerCommand('ith2ome.hotRefresh', () => { // 刷新“热榜”
