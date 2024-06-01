@@ -7,6 +7,7 @@ let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
 let ithomeEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏", "之家", "水库"]; // 之家表情包
 let config: vscode.WorkspaceConfiguration; // 所有设置信息
 let userHash: string; // 通行证 Cookie
+let userId: number = -1; // 用户 ID
 let signReminder: boolean; // 签到提醒
 let showPreviewImages: boolean; // 显示图片
 let titleLength: number; // 标题显示长度
@@ -194,7 +195,7 @@ function commentPictureFormat(pictures: commentPictureJSON[]) {
 	let content = '<div style="text-align:center">';
 	for (let picture of pictures)
 		if (commentImageWidth > 0)
-			content += `<img class="comment" src="${atob(picture.src)}"` + (imageScaleMethod == 2 ? ' onclick="zoomImage(this)"/>' : '/>')
+			content += `<img class="comment" src="${atob(picture.src)}"` + (imageScaleMethod == 2 ? ' onclick="this.classList.toggle(\'img-comment-zoom\')"/>' : '/>')
 		else
 			content += '#图片已屏蔽#'
 	return content + '</div>'
@@ -203,7 +204,7 @@ function commentPictureFormat(pictures: commentPictureJSON[]) {
 function commentItemFormat(comment: commentJSON): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span style="color:#28BD98;margin-right:3em">支持(${comment.support})</span><span style="color:#FF6F6F">反对(${comment.against})</span></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span class="support">支持(${comment.support})</span><span class="against">反对(${comment.against})</span></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -221,6 +222,33 @@ function commentFormat(commentList: commentJSON[], commentTitle: string): string
 		commentContent += '</li>'
 	}
 	return '<hr>' + commentContent + '</ul>';
+}
+
+function gradeFormat(articleId: number, voteGrade: number, grade: number, support: number, against: number): string { // 生成文章得分和投票按钮
+	if (voteGrade == 2) // 有价值
+		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="voted support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support - 1},${against})">有价值(${support})</a><a class="against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support - 1},${against})">无价值(${against})</a>`;
+	if (voteGrade == 0) // 无价值
+		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support},${against - 1})">有价值(${support})</a><a class="voted against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support},${against - 1})">无价值(${against})</a>`;
+	// 未投票
+	return `<p id="grade">打分后显示文章质量得分，当前 ${support + against} 人打分</p><a class="support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support},${against})">有价值</a><a class="against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support},${against})">无价值</a>`
+}
+
+function voteArticle(panel: vscode.WebviewPanel, articleId: number, voteType: string, voteGrade: number, support: number, against: number) { // 文章投票
+	if (userId == -1) // 未登录
+		vscode.window.showErrorMessage("请先登录之家账号！");
+	else // 因为要改 origin，所以不能在 webview 里请求，要转发至 vscode，再用 superagent 请求后转发回 webview
+		superagent.get(`https://dyn.ithome.com/api/newsgrade/${voteType}?user=${userHash}&newsid=${articleId}&grade=${voteGrade}`).set('Origin', "https://www.ithome.com").end((errGrade, resGrade) => {
+			if (!resGrade.ok)
+				vscode.window.showErrorMessage("打分失败，请检查账号和网络！");
+			else if (voteType == "create")
+				panel.webview.postMessage({
+					command: 'refreshGrade', text: gradeFormat(articleId, voteGrade, resGrade.body.Grade, resGrade.body.g3, resGrade.body.g1)
+				});
+			else
+				panel.webview.postMessage({
+					command: 'refreshGrade', text: gradeFormat(articleId, -1, 0., support, against)
+				});
+		});
 }
 
 class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 View 提供内容
@@ -262,6 +290,7 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 						return;
 					}
 					let userInfo = res.body.userinfo;
+					userId = userInfo.userid;
 					this.list = [{
 						label: `${userInfo.nickname}，您好！您已连续登录 ${userInfo.conldays} 天`,
 						iconPath: new vscode.ThemeIcon('account'),
@@ -434,9 +463,18 @@ export function activate(context: vscode.ExtensionContext) {
 				panel.webview.onDidReceiveMessage(
 					message => {
 						switch (message.command) {
-							case 'openRelate':
+							case 'openRelate': // 打开之家文章
 								vscode.commands.executeCommand('ith2ome.showContent', message.title, message.id);
-								return;
+								break;
+							case 'voteArticle': // 文章投票
+								voteArticle(panel!, message.id, message.type, message.grade, message.support, message.against);
+								break;
+							case 'showInfo':
+								vscode.window.showInformationMessage(message.text);
+								break;
+							case 'showError':
+								vscode.window.showErrorMessage(message.text);
+								break;
 						}
 					},
 					undefined,
@@ -453,7 +491,7 @@ export function activate(context: vscode.ExtensionContext) {
 						resNews.body.detail = resNews.body.detail.replace(BiliVideo, '<div id="' + BVID + '" align="center"><h4><a href="https://www.bilibili.com/video/' + BVID + '">哔哩哔哩视频：信息加载中</a></h4></div>');
 						superagent.get('https://api.bilibili.com/x/web-interface/view?bvid=' + BVID).end((errBiliVideo, resBiliVideo) => { // 加载B站视频信息
 							let biliVideoData = resBiliVideo.body.data;
-							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="${BVID}.*?</div>`), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVID + `">哔哩哔哩视频：${biliVideoData.title}</a></h4>` + (imageWidth > 0 ? `<img src="${biliVideoData.pic}" alt="哔哩哔哩视频封面"` + (imageScaleMethod == 2 ? ' onclick="zoomImage(this)"/>' : '/>') : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(biliVideoData.stat.view)}</td><td>${numberFormat(biliVideoData.stat.danmaku)}</td><td>${numberFormat(biliVideoData.stat.reply)}</td><td>${numberFormat(biliVideoData.stat.like)}</td><td>${numberFormat(biliVideoData.stat.coin)}</td><td>${numberFormat(biliVideoData.stat.favorite)}</td><td>${numberFormat(biliVideoData.stat.share)}</td><td>${new Date(biliVideoData.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr>` + (imageWidth > 0 ? `<td style="min-width:6em"><img class="video-avatar" src="${biliVideoData.owner.face}"></br>` : '<td>') + `<strong><a href="https://space.bilibili.com/${biliVideoData.owner.mid}">${biliVideoData.owner.name}</a></strong></td><td><p style="white-space:pre-wrap;text-align:left">${biliVideoData.desc}</p></td></tr></table></div>`);
+							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="${BVID}.*?</div>`), '<div align="center" style="border:solid#FB7299"><h4><a href="https://www.bilibili.com/video/' + BVID + `">哔哩哔哩视频：${biliVideoData.title}</a></h4>` + (imageWidth > 0 ? `<img src="${biliVideoData.pic}" alt="哔哩哔哩视频封面"` + (imageScaleMethod == 2 ? ' onclick="this.classList.toggle(\'img-zoom\')"/>' : '/>') : '') + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>弹幕</th><th>评论</th><th>点赞</th><th>投币</th><th>收藏</th><th>转发</th><th>发布时间</th></tr><tr><td>${numberFormat(biliVideoData.stat.view)}</td><td>${numberFormat(biliVideoData.stat.danmaku)}</td><td>${numberFormat(biliVideoData.stat.reply)}</td><td>${numberFormat(biliVideoData.stat.like)}</td><td>${numberFormat(biliVideoData.stat.coin)}</td><td>${numberFormat(biliVideoData.stat.favorite)}</td><td>${numberFormat(biliVideoData.stat.share)}</td><td>${new Date(biliVideoData.pubdate * 1000).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr>` + (imageWidth > 0 ? `<td style="min-width:6em"><img class="video-avatar" src="${biliVideoData.owner.face}"></br>` : '<td>') + `<strong><a href="https://space.bilibili.com/${biliVideoData.owner.mid}">${biliVideoData.owner.name}</a></strong></td><td><p style="white-space:pre-wrap;text-align:left">${biliVideoData.desc}</p></td></tr></table></div>`);
 						});
 					}
 				}
@@ -464,7 +502,7 @@ export function activate(context: vscode.ExtensionContext) {
 						resNews.body.detail = resNews.body.detail.replace(weiboVideoList[i], `<div id="weiboVideo-${i}" align="center"><h4><a href="` + weiboHref + '">微博视频：信息加载中</a></h4></div>');
 						superagent.get(weiboHref.replace('weibo.com', 'm.weibo.cn')).end((errWeiboVideo, resWeiboVideo) => { // 加载微博视频信息
 							let weiboVideoData = JSON.parse(resWeiboVideo.text.match(RegExp('(?<=render_data = \\[)[\\s\\S]*?(?=\\]\\[0\\])'))![0]).status;
-							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="weiboVideo-${i}".*?</div>`), `<div align="center" style="border:solid#D13A34"><h4><a href="${weiboHref}">微博视频：${weiboVideoData.status_title}</a></h4>` + (videoWidth > 0 ? `<video controls="controls" style="max-width:100%;width:${videoWidth}px" poster="${weiboVideoData.page_info.page_pic.url}" src="${weiboVideoData.page_info.urls.mp4_720p_mp4}"></video>` : (imageWidth > 0 ? `<img src="${weiboVideoData.page_info.page_pic.url}" alt="微博视频封面"` + (imageScaleMethod == 2 ? ' onclick="zoomImage(this)"/>' : '/>') : '')) + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>转发</th><th>评论</th><th>点赞</th><th>发布时间</th></tr><tr><td>${weiboVideoData.page_info.play_count}</td><td>${numberFormat(weiboVideoData.reposts_count)}</td><td>${numberFormat(weiboVideoData.comments_count)}</td><td>${numberFormat(weiboVideoData.attitudes_count)}</td><td>${new Date(weiboVideoData.created_at).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr>` + (imageWidth > 0 ? `<td style="min-width:6em"><img class="video-avatar" src="${weiboVideoData.user.profile_image_url}"></td><td colspan="3">` : '<td colspan="4">') + `<p style="white-space:pre-wrap;text-align:left">${weiboVideoData.text}</p></td></tr><tr><td><strong><a href="${weiboVideoData.user.profile_url}">${weiboVideoData.user.screen_name}</a></strong></td><td>${weiboVideoData.user.follow_count}关注</td><td>${weiboVideoData.user.followers_count}粉丝</td><td>${weiboVideoData.user.statuses_count}微博</td></tr></table></div>`);
+							panel!.webview.html = panel!.webview.html.replace(RegExp(`<div id="weiboVideo-${i}".*?</div>`), `<div align="center" style="border:solid#D13A34"><h4><a href="${weiboHref}">微博视频：${weiboVideoData.status_title}</a></h4>` + (videoWidth > 0 ? `<video controls="controls" style="max-width:100%;width:${videoWidth}px" poster="${weiboVideoData.page_info.page_pic.url}" src="${weiboVideoData.page_info.urls.mp4_720p_mp4}"></video>` : (imageWidth > 0 ? `<img src="${weiboVideoData.page_info.page_pic.url}" alt="微博视频封面"` + (imageScaleMethod == 2 ? ' onclick="this.classList.toggle(\'img-zoom\')"/>' : '/>') : '')) + `<table style="border-spacing:1.5em 0.5em"><tr><th>观看</th><th>转发</th><th>评论</th><th>点赞</th><th>发布时间</th></tr><tr><td>${weiboVideoData.page_info.play_count}</td><td>${numberFormat(weiboVideoData.reposts_count)}</td><td>${numberFormat(weiboVideoData.comments_count)}</td><td>${numberFormat(weiboVideoData.attitudes_count)}</td><td>${new Date(weiboVideoData.created_at).toLocaleString('zh-CN')}</td></tr></table><table style="text-align:center;border-spacing:2em 0em;padding-bottom:1em"><tr>` + (imageWidth > 0 ? `<td style="min-width:6em"><img class="video-avatar" src="${weiboVideoData.user.profile_image_url}"></td><td colspan="3">` : '<td colspan="4">') + `<p style="white-space:pre-wrap;text-align:left">${weiboVideoData.text}</p></td></tr><tr><td><strong><a href="${weiboVideoData.user.profile_url}">${weiboVideoData.user.screen_name}</a></strong></td><td>${weiboVideoData.user.follow_count}关注</td><td>${weiboVideoData.user.followers_count}粉丝</td><td>${weiboVideoData.user.statuses_count}微博</td></tr></table></div>`);
 							if (videoWidth > 0 || imageWidth > 0)
 								superagent.get(weiboVideoData.page_info.page_pic.url).set('Referer', weiboHref).end((errWeiboVideoPic, resWeiboVideoPic) => {
 									panel!.webview.html = panel!.webview.html.replace(weiboVideoData.page_info.page_pic.url, `data:${resWeiboVideoPic.type};base64,${Buffer.from(resWeiboVideoPic.body).toString('base64')}`);
@@ -488,24 +526,50 @@ export function activate(context: vscode.ExtensionContext) {
 					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
 				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
 					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition-duration:0.5s}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
+					+ `img.img-zoom{transform:scale(${imageScale})}` // 正文图片缩放
 					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 && commentImageScale != 1.0 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
+					+ `img.img-comment-zoom{transform:scale(${imageScale})}` // 评论图片缩放
 					+ 'img.avatar{float:left;height:4em;width:4em;border-radius:50%;transform:none}img.video-avatar{height:6em;width:6em;border-radius:50%;transform:none}' // 头像样式
+					+ '#grade{display:block;text-align:center}' // 文章质量得分样式
+					+ '.voted{outline:1px solid;font-weight:bold;text-decoration:none}' // 已投票样式
+					+ `.support{cursor:pointer;color:#28BD98;margin-right:3em}` // 支持样式
+					+ `.against{cursor:pointer;color:#FF6F6F}` // 反对样式
 					+ '#scroll-to-top{position:absolute;width:40px;height:40px;right:5px;margin-top:calc(100vh - 65px);background-color:var(--vscode-button-background,#444);border-color:var(--vscode-button-border);border-radius:50%;cursor:pointer;box-shadow:1px 1px 1px rgba(0,0,0,.25);outline:none;display:flex;justify-content:center;align-items:center;}' // 回到顶部按钮样式
 					+ '#scroll-to-top:hover{background-color:var(--vscode-button-hoverBackground);box-shadow:2px 2px 2px rgba(0,0,0,.25);}' // 回到顶部按钮悬浮样式
-					+ '</style><script>const vscode=acquireVsCodeApi();function ITH2OmeOpen(title,id){vscode.postMessage({command:"openRelate",title,id});}' // 打开相关文章
-					+ `function zoomImage(image){if(image.style.transform&&image.style.transform!="scale(1)")image.style.transform="scale(1)";else if(image.className.includes("comment"))image.style.transform="scale(${commentImageScale})";else image.style.transform="scale(${imageScale})";}</script>` // 点击缩放图片
-					+ `</head><h1>${resNews.body.title}</h1>` // 标题
+					+ '</style><script>'
+					+ 'let vscode=acquireVsCodeApi();'
+					+ `function ITH2OmeOpen(title,id) {
+						vscode.postMessage({command:"openRelate",title,id});
+					}` // 打开相关文章
+					+ `function voteArticle(articleId,grade,button,support,against) {
+						if ((grade == 2 && document.getElementById("grade-against").classList.contains("voted")) || (grade == 0 && document.getElementById("grade-support").classList.contains("voted")))
+							vscode.postMessage({command: "showError", text:"请先取消投票！"});
+						else if (button.classList.contains("voted"))
+							vscode.postMessage({command:"voteArticle", id:${id}, type:"cancel", grade, support, against});
+						else
+							vscode.postMessage({command:"voteArticle", id:${id}, type:"create", grade, support, against});
+					}` // 文章质量投票
+					+ `window.addEventListener("message", event=>{
+						const message = event.data;
+						if (message.command == "refreshGrade")
+							document.getElementById("grade").innerHTML = message.text;
+					})`
+					+ `</script></head><h1>${resNews.body.title}</h1>` // 标题
 					+ `<h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3>` // 新闻源、责编
 					+ `<h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4>` // 发布时间
 					+ '<div style="position:sticky;top:0px"><button id="scroll-to-top" onclick="window.scrollTo({top:0,behavior:\'smooth\'});" aria-label="回到顶部"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE5LjIuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxNiAxNiIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgMTYgMTY7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7ZmlsbDojRkZGRkZGO30KCS5zdDF7ZmlsbDpub25lO30KPC9zdHlsZT4KPHRpdGxlPnVwY2hldnJvbjwvdGl0bGU+CjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik04LDUuMWwtNy4zLDcuM0wwLDExLjZsOC04bDgsOGwtMC43LDAuN0w4LDUuMXoiLz4KPHJlY3QgY2xhc3M9InN0MSIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2Ii8+Cjwvc3ZnPgo=" width="16" height="16"></button></div>' // 回到顶部按钮
-					+ `${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : (imageScaleMethod == 2 ? resNews.body.detail.replace(RegExp('<img ', 'g'), '<img onclick="zoomImage(this)"') : resNews.body.detail)}`; // 图片屏蔽/添加缩放命令
+					+ `${imageWidth <= 0 ? resNews.body.detail.replace(RegExp('<img[\\s\\S]*?>', 'g'), '#图片已屏蔽#') : (imageScaleMethod == 2 ? resNews.body.detail.replace(RegExp('<img ', 'g'), '<img onclick="this.classList.toggle(\'img-zoom\')"') : resNews.body.detail)}`; // 图片屏蔽/添加缩放命令
+				panel!.webview.html += '<div id="grade">文章质量得分加载中</div>'
+				superagent.get(`https://dyn.ithome.com/api/newsgrade/get?newsID=${id}` + (userId != -1 ? `&userID=${userId}` : '')).end((errGrade, resGrade) => {
+					panel!.webview.html = panel!.webview.html.replace('文章质量得分加载中', gradeFormat(id, resGrade.body.me, resGrade.body.Grade, resGrade.body.g3, resGrade.body.g1));
+				});
 				if (showRelated) { // 显示相关文章
-					panel!.webview.html += `<hr><h2>相关文章</h2>`;
+					panel!.webview.html += '<hr><h2>相关文章</h2>';
 					superagent.get(`https://napi.ithome.com/api/news/getrelatednews/${id}`).end((errRelate, resRelate) => {
 						let text = '<h2>相关文章</h2><ul>';
-						let relateList = JSON.parse(resRelate.text).data.relatedNewsResponseModels;
+						let relateList = resRelate.body.data.relatedNewsResponseModels;
 						for (let relatedNews of relateList)
-							text += `<li><a href="" onclick="ITH2OmeOpen('${relatedNews.newstitle}',${relatedNews.newsid});">${relatedNews.newstitle}</a></li>`;
+							text += `<li><a href="" onclick="ITH2OmeOpen('${relatedNews.newstitle}',${relatedNews.newsid})">${relatedNews.newstitle}</a></li>`;
 						panel!.webview.html = panel!.webview.html.replace('<h2>相关文章</h2>', text + '</ul>');
 					});
 				}
@@ -514,7 +578,7 @@ export function activate(context: vscode.ExtensionContext) {
 					superagent.get(`https://www.ithome.com/0/${Math.floor(id / 1000)}/${id % 1000}.htm`).end((errComment, resComment) => {
 						let commentSN = resComment.text.match(RegExp('(?<=data-id=")[0-9a-f]{16}', 'g'));
 						superagent.get(`https://cmt.ithome.com/api/webcomment/getnewscomment?sn=${commentSN}&isInit=true&appver=868${commentOrder ? '&latest=1' : ''}`).end((errComment, resComment) => {
-							let commentJSON = JSON.parse(resComment.text);
+							let commentJSON = resComment.body;
 							if (commentJSON && commentJSON.content.topComments.length + commentJSON.content.hotComments.length + commentJSON.content.comments.length > 0)
 								panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentFormat(commentJSON.content.topComments, '置顶评论') + commentFormat(commentJSON.content.hotComments, '热门评论') + commentFormat(commentJSON.content.comments, '最' + commentOrderWord + '评论'));
 							else
