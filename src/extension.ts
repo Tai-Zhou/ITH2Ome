@@ -2,6 +2,61 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as superagent from 'superagent';
 
+interface userInfo {
+	id: number, // ID
+	level: number, // 等级
+	link: string, // 主页
+	m: number,
+	userAvatar: string, // 头像
+	userNick: string, // 昵称
+	vip: number, // 管理员？
+}
+
+interface commentElementJSON {
+	atUserId: number,
+	content: string, // 内容
+	height: number,
+	isAutoReply: boolean,
+	link: any,
+	src: any,
+	topicId: number,
+	type: number,
+	width: number,
+}
+
+interface commentPictureJSON {
+	src: string,
+}
+
+interface commentJSON {
+	against: number, // 反对
+	checkStatus: number,
+	children: commentJSON[], // 回复评论
+	city: string, // 城市
+	editRole: any,
+	editStatus: number,
+	editStatusStr: any,
+	editTime: string,
+	elements: commentElementJSON[],
+	expandCount: number,
+	floorStr: string, // 楼层
+	id: number, // 评论id
+	paragraphId: any,
+	parentCommentId: number,
+	pictures: commentPictureJSON[], // 图片
+	postTime: string, // 评论时间
+	referText: string, // 引文
+	replyCommentId: number, // 回复评论id
+	replyFloorStr: string, // 回复楼层
+	replyUserInfo: userInfo, // 回复用户信息
+	support: number, // 支持
+	userInfo: userInfo, // 用户信息
+	voteStatus: number,
+}
+class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
+	shareInfo?: string;
+}
+
 let extensionPath: string; // 插件路径
 let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
 let ithomeEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏", "之家", "水库"]; // 之家表情包
@@ -94,10 +149,6 @@ function linkCheck(url: string): vscode.Uri { // 检查链接是否以 https:// 
 	return vscode.Uri.parse(url.substring(0, 5) == 'https' ? url : 'https://www.ithome.com' + url);
 }
 
-class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
-	shareInfo?: string;
-}
-
 function newsFormat(news: any, icon: string): ith2omeItem {
 	let time = new Date(news.postdate).toLocaleString('zh-CN');
 	let highlights = highlight(news.title);
@@ -133,58 +184,6 @@ function numberFormat(num: number): string {
 	return num >= 10000 ? (num / 10000).toFixed(1).toString() + '万' : num.toString();
 }
 
-interface userInfo {
-	id: number, // ID
-	level: number, // 等级
-	link: string, // 主页
-	m: number,
-	userAvatar: string, // 头像
-	userNick: string, // 昵称
-	vip: number, // 管理员？
-}
-
-interface commentElementJSON {
-	atUserId: number,
-	content: string, // 内容
-	height: number,
-	isAutoReply: boolean,
-	link: any,
-	src: any,
-	topicId: number,
-	type: number,
-	width: number,
-}
-
-interface commentPictureJSON {
-	src: string,
-}
-
-interface commentJSON {
-	against: number, // 反对
-	checkStatus: number,
-	children: commentJSON[], // 回复评论
-	city: string, // 城市
-	editRole: any,
-	editStatus: number,
-	editStatusStr: any,
-	editTime: string,
-	elements: commentElementJSON[],
-	expandCount: number,
-	floorStr: string, // 楼层
-	id: number, // 评论id
-	paragraphId: any,
-	parentCommentId: number,
-	pictures: commentPictureJSON[], // 图片
-	postTime: string, // 评论时间
-	referText: string, // 引文
-	replyCommentId: number, // 回复评论id
-	replyFloorStr: string, // 回复楼层
-	replyUserInfo: userInfo, // 回复用户信息
-	support: number, // 支持
-	userInfo: userInfo, // 用户信息
-	voteStatus: number,
-}
-
 function commentReplayFormt(comment: commentJSON) { // 生成回复
 	return `回复 ${comment.replyFloorStr} <strong>${comment.replyUserInfo.userNick}</strong>：`
 }
@@ -204,7 +203,7 @@ function commentPictureFormat(pictures: commentPictureJSON[]) {
 function commentItemFormat(comment: commentJSON): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div><br>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}${comment.children.length > 0 ? `<span style="margin-right:3em">回复(${comment.children.length})</span>` : ''}<span class="support">支持(${comment.support})</span><span class="against">反对(${comment.against})</span></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}<span style="margin-right:3em">回复(${comment.children.length})</span><span class="support">支持(${comment.support})</span><span class="against">反对(${comment.against})</span></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -530,6 +529,7 @@ export function activate(context: vscode.ExtensionContext) {
 					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 && commentImageScale != 1.0 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
 					+ `img.img-comment-zoom{transform:scale(${imageScale})}` // 评论图片缩放
 					+ 'img.avatar{float:left;height:4em;width:4em;border-radius:50%;transform:none}img.video-avatar{height:6em;width:6em;border-radius:50%;transform:none}' // 头像样式
+					+ 'blockquote{margin:0.5em;padding:0.5em;border-left:3px solid #007acc;font-style:italic}' // 引文样式
 					+ '#grade{display:block;text-align:center}' // 文章质量得分样式
 					+ '.voted{outline:1px solid;font-weight:bold;text-decoration:none}' // 已投票样式
 					+ `.support{cursor:pointer;color:#28BD98;margin-right:3em}` // 支持样式
