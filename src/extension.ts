@@ -51,7 +51,7 @@ interface commentJSON {
 	replyUserInfo: userInfo, // 回复用户信息
 	support: number, // 支持
 	userInfo: userInfo, // 用户信息
-	voteStatus: number,
+	voteStatus: number, // 投票状态，需要 Bearer token 才能获取
 }
 class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
 	shareInfo?: string;
@@ -104,10 +104,7 @@ function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	imageWidth = <number>config.get('imageWidth');
 	imageScale = <number>config.get('imageScale');
 	imageScaleMethod = <number>config.get('imageScaleMethod');
-	if (imageScaleMethod == 1)
-		imageScaleMethodWord = 'active';
-	else
-		imageScaleMethodWord = 'hover';
+	imageScaleMethodWord = imageScaleMethod == 1 ? 'active' : 'hover';
 	videoWidth = <number>config.get('videoWidth');
 	showRelated = <boolean>config.get('showRelated');
 	showComment = <boolean>config.get('showComment');
@@ -149,7 +146,7 @@ function linkCheck(url: string): vscode.Uri { // 检查链接是否以 https:// 
 	return vscode.Uri.parse(url.substring(0, 5) == 'https' ? url : 'https://www.ithome.com' + url);
 }
 
-function newsFormat(news: any, icon: string): ith2omeItem {
+function newsFormat(news: any, icon: string): ith2omeItem { // TreeItem 对象格式化
 	let time = new Date(news.postdate).toLocaleString('zh-CN');
 	let highlights = highlight(news.title);
 	return {
@@ -165,11 +162,11 @@ function newsFormat(news: any, icon: string): ith2omeItem {
 	};
 }
 
-function titleFormat(title: string): string {
+function titleFormat(title: string): string { // Tab 标题格式化
 	return title.length > titleLength ? title.substring(0, titleLength) + '…' : title;
 }
 
-function linkFormat(text: string): string {
+function linkFormat(text: string): string { // 之家文章链接格式化
 	let linkList = text.match(RegExp('<a href="https://www.ithome.com.*?</a>', 'g')) ?? []; // 匹配之家文章链接
 	for (let link of linkList) {
 		let title = link.match(RegExp('(?<=>).*?(?=<)'))![0];
@@ -180,7 +177,7 @@ function linkFormat(text: string): string {
 	return text;
 }
 
-function numberFormat(num: number): string {
+function numberFormat(num: number): string { // 中文数字显示格式化
 	return num >= 10000 ? (num / 10000).toFixed(1).toString() + '万' : num.toString();
 }
 
@@ -188,7 +185,7 @@ function commentReplayFormt(comment: commentJSON) { // 生成回复
 	return `回复 ${comment.replyFloorStr} <strong>${comment.replyUserInfo.userNick}</strong>：`
 }
 
-function commentPictureFormat(pictures: commentPictureJSON[]) {
+function commentPictureFormat(pictures: commentPictureJSON[]) { // 生成评论图片
 	if (!pictures)
 		return '';
 	let content = '<div style="text-align:center">';
@@ -200,10 +197,25 @@ function commentPictureFormat(pictures: commentPictureJSON[]) {
 	return content + '</div>'
 }
 
+function commentVoteFormat(commentId: number, reply: number, support: number, against: number, voteStatus: number) { // 生成评论投票
+	let supportId = 1, againstId = 2;
+	let supportClass = "", againstClass = "";
+	if (voteStatus == 1) { // 已支持
+		supportId = -1;
+		againstId = 0;
+		supportClass = "voted ";
+	} else if (voteStatus == 2) { // 已反对
+		supportId = 0;
+		againstId = -2;
+		againstClass = "voted ";
+	}
+	return `<span style="margin-right:3em">回复(${reply})</span><a class="${supportClass}support" onclick="voteCommentWebview(${commentId},${supportId},${reply},${support},${against})">支持(${support})</a><a class="${againstClass}against" onclick="voteCommentWebview(${commentId},${againstId},${reply},${support},${against})">反对(${against})</a>`;
+}
+
 function commentItemFormat(comment: commentJSON): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}<br>${commentPictureFormat(comment.pictures)}<span style="margin-right:3em">回复(${comment.children.length})</span><span class="support">支持(${comment.support})</span><span class="against">反对(${comment.against})</span></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}<div id="vote-${comment.id}">${commentVoteFormat(comment.id, comment.children.length, comment.support, comment.against, comment.voteStatus)}</div></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -225,29 +237,57 @@ function commentFormat(commentList: commentJSON[], commentTitle: string): string
 
 function gradeFormat(articleId: number, voteGrade: number, grade: number, support: number, against: number): string { // 生成文章得分和投票按钮
 	if (voteGrade == 2) // 有价值
-		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="voted support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support - 1},${against})">有价值(${support})</a><a class="against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support - 1},${against})">无价值(${against})</a>`;
+		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="voted support" onclick="voteArticleWebview(${articleId},-1,${support - 1},${against})">有价值(${support})</a><a class="against" onclick="voteArticleWebview(-1,0,${support - 1},${against})">无价值(${against})</a>`;
 	if (voteGrade == 0) // 无价值
-		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support},${against - 1})">有价值(${support})</a><a class="voted against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support},${against - 1})">无价值(${against})</a>`;
+		return `<p id="grade">文章价值：<strong>${grade}</strong> 分， ${support + against} 人打分</p><a class="support" onclick="voteArticleWebview(-1,2,${support},${against - 1})">有价值(${support})</a><a class="voted against" onclick="voteArticleWebview(${articleId},-3,${support},${against - 1})">无价值(${against})</a>`;
 	// 未投票
-	return `<p id="grade">打分后显示文章质量得分，当前 ${support + against} 人打分</p><a class="support" id="grade-support" onclick="voteArticle(${articleId},2,this,${support},${against})">有价值</a><a class="against" id="grade-against" onclick="voteArticle(${articleId},0,this,${support},${against})">无价值</a>`
+	return `<p id="grade">打分后显示文章质量得分，当前 ${support + against} 人打分</p><a class="support" onclick="voteArticleWebview(${articleId},2,${support},${against})">有价值</a><a class="against" onclick="voteArticleWebview(${articleId},0,${support},${against})">无价值</a>`
 }
 
 function voteArticle(panel: vscode.WebviewPanel, articleId: number, voteType: string, voteGrade: number, support: number, against: number) { // 文章投票
 	if (userId == -1) // 未登录
-		vscode.window.showErrorMessage("请先登录之家账号！");
-	else // 因为要改 origin，所以不能在 webview 里请求，要转发至 vscode，再用 superagent 请求后转发回 webview
-		superagent.get(`https://dyn.ithome.com/api/newsgrade/${voteType}?user=${userHash}&newsid=${articleId}&grade=${voteGrade}`).set('Origin', "https://www.ithome.com").end((errGrade, resGrade) => {
-			if (!resGrade.ok)
-				vscode.window.showErrorMessage("打分失败，请检查账号和网络！");
-			else if (voteType == "create")
-				panel.webview.postMessage({
-					command: 'refreshGrade', text: gradeFormat(articleId, voteGrade, resGrade.body.Grade, resGrade.body.g3, resGrade.body.g1)
-				});
-			else
-				panel.webview.postMessage({
-					command: 'refreshGrade', text: gradeFormat(articleId, -1, 0., support, against)
-				});
+		return vscode.window.showErrorMessage("请先登录之家账号！");
+	// 因为要改 origin，所以不能在 webview 里请求，要转发至 vscode，再用 superagent 请求后转发回 webview
+	superagent.get(`https://dyn.ithome.com/api/newsgrade/${voteType}?user=${userHash}&newsid=${articleId}&grade=${voteGrade}`).set('Origin', "https://www.ithome.com").end((errGrade, resGrade) => {
+		if (!resGrade.ok)
+			return vscode.window.showErrorMessage("打分失败，请检查账号和网络！");
+		if (voteType != "create") // 取消投票
+			voteGrade = 1;
+		else { // 刷新投票人数数据
+			support = resGrade.body.g3;
+			against = resGrade.body.g1;
+		}
+		panel.webview.postMessage({
+			command: 'refreshGrade', text: gradeFormat(articleId, voteGrade, resGrade.body.Grade, support, against)
 		});
+	});
+}
+
+
+function voteComment(panel: vscode.WebviewPanel, commentId: number, voteType: string, typeId: number, reply: number, support: number, against: number) { // 评论投票
+	if (userId == -1) // 未登录
+		return vscode.window.showErrorMessage("请先登录之家账号！");
+	// 因为要改 origin，所以不能在 webview 里请求，要转发至 vscode，再用 superagent 请求后转发回 webview
+	superagent.get(`https://cmt.ithome.com/api/comment/${voteType}?commentId=${commentId}&typeId=${typeId}&userhash=${userHash}`).set('Origin', "https://www.ithome.com").end((errVote, resVote) => {
+		if (!resVote.ok)
+			return vscode.window.showErrorMessage("投票失败，请检查账号和网络！");
+		if (!resVote.body.success) { // 已投票，但插件没有投票信息，本处刷新信息
+			vscode.window.showErrorMessage(`投票失败，${resVote.body.message}！`);
+			typeId = resVote.body.message.includes("支持") ? 1 : 2;
+		} else if (voteType != "vote") { // 取消投票
+			if (typeId == 1)
+				--support;
+			else
+				--against;
+			typeId = -1;
+		} else if (typeId == 1) // 支持
+			++support;
+		else // 反对
+			++against;
+		panel.webview.postMessage({
+			command: 'refreshVote', id: commentId, text: commentVoteFormat(commentId, reply, support, against, typeId)
+		});
+	});
 }
 
 class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 View 提供内容
@@ -258,8 +298,8 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 	mode: number; // 工作模式，0 为“通行证”，1 为“最新”，2 为“热榜”，3 为“热评”
 	refreshTimer: NodeJS.Timeout | undefined; // 自动刷新计时器
 
-	constructor(_mode: number) {
-		this.mode = _mode;
+	constructor(mode: number) {
+		this.mode = mode;
 		this.refresh();
 	}
 	refresh(refreshType: number = 0) { // 0 为手动刷新，1 为自动刷新，其余为加载更多的时间戳（仅用于“最新”）
@@ -468,6 +508,9 @@ export function activate(context: vscode.ExtensionContext) {
 							case 'voteArticle': // 文章投票
 								voteArticle(panel!, message.id, message.type, message.grade, message.support, message.against);
 								break;
+							case 'voteComment': // 评论投票
+								voteComment(panel!, message.id, message.type, message.grade, message.reply, message.support, message.against);
+								break;
 							case 'showInfo':
 								vscode.window.showInformationMessage(message.text);
 								break;
@@ -541,19 +584,29 @@ export function activate(context: vscode.ExtensionContext) {
 					+ `function ITH2OmeOpen(title,id) {
 						vscode.postMessage({command:"openRelate",title,id});
 					}` // 打开相关文章
-					+ `function voteArticle(articleId,grade,button,support,against) {
-						if ((grade == 2 && document.getElementById("grade-against").classList.contains("voted")) || (grade == 0 && document.getElementById("grade-support").classList.contains("voted")))
-							vscode.postMessage({command: "showError", text:"请先取消投票！"});
-						else if (button.classList.contains("voted"))
-							vscode.postMessage({command:"voteArticle", id:${id}, type:"cancel", grade, support, against});
+					+ `function voteArticleWebview(articleId,grade,support,against) {
+						if (articleId < 0)
+							vscode.postMessage({command:"showError", text:"请先取消投票！"});
+						else if (grade < 0)
+							vscode.postMessage({command:"voteArticle", id:${id}, type:"cancel", grade: grade + 3, support, against});
 						else
 							vscode.postMessage({command:"voteArticle", id:${id}, type:"create", grade, support, against});
 					}` // 文章质量投票
+					+ `function voteCommentWebview(commentId,grade,reply,support,against) {
+						if (grade == 0)
+							vscode.postMessage({command:"showError", text:"请先取消投票！"});
+						else if (grade < 0)
+							vscode.postMessage({command:"voteComment", id:commentId, type:"cancelvote", grade: -grade, reply, support, against});
+						else
+							vscode.postMessage({command:"voteComment", id:commentId, type:"vote", grade, reply, support, against});
+					}` // 评论投票
 					+ `window.addEventListener("message", event=>{
 						const message = event.data;
-						if (message.command == "refreshGrade")
+						if (message.command == "refreshGrade") // 更新投票信息
 							document.getElementById("grade").innerHTML = message.text;
-					})`
+						else if (message.command == "refreshVote") // 更新评论信息
+							document.getElementById("vote-"+message.id).innerHTML = message.text;
+					});`
 					+ `</script></head><h1>${resNews.body.title}</h1>` // 标题
 					+ `<h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3>` // 新闻源、责编
 					+ `<h4>${new Date(resNews.body.postdate).toLocaleString('zh-CN')}</h4>` // 发布时间
