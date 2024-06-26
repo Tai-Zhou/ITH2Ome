@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.11.0",
+	"version": "1.11.1",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -256,6 +256,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "查看内容时显示评论是否顺序，默认设置为最新在前。"
+				},
+				"ith2ome.blurNegativeComment": {
+					"type": "boolean",
+					"default": true,
+					"description": "查看内容时是否模糊反对多于支持的评论。"
 				},
 				"ith2ome.autoRefresh": {
 					"type": "integer",

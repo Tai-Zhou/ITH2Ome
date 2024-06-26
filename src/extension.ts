@@ -78,6 +78,7 @@ let commentImageWidth: number; // 评论图片显示宽度
 let commentImageScale: number; // 评论图片缩放比例
 let commentOrder: boolean; // 网友评论顺序
 let commentOrderWord: string; // 网友评论顺序字典
+let blurNegativeComment: boolean; // 模糊负面评论
 let autoRefresh: number; // “最新”刷新间隔
 let keyWords: string[]; // 关键词列表
 let keysLength: number[]; // 关键词长度
@@ -113,6 +114,7 @@ function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	commentImageScale = <number>config.get('commentImageScale');
 	commentOrder = <boolean>config.get('commentOrder');
 	commentOrderWord = commentOrder ? '早' : '新';
+	blurNegativeComment = <boolean>config.get('blurNegativeComment');
 	autoRefresh = <number>config.get('autoRefresh');
 	keyWords = <string[]>config.get('keyWords');
 	keysLength = new Array(keyWords.length);
@@ -215,7 +217,10 @@ function commentVoteFormat(commentId: number, reply: number, support: number, ag
 function commentItemFormat(comment: commentJSON): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}<div id="vote-${comment.id}">${commentVoteFormat(comment.id, comment.children.length, comment.support, comment.against, comment.voteStatus)}</div></div>`;
+	let commentClass = "";
+	if (blurNegativeComment && comment.support < comment.against)
+		commentClass = "blur";
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<span class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}</span><div id="vote-${comment.id}">${commentVoteFormat(comment.id, comment.children.length, comment.support, comment.against, comment.voteStatus)}</div></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -566,8 +571,9 @@ export function activate(context: vscode.ExtensionContext) {
 				resNews.body.detail = linkFormat(resNews.body.detail); // 匹配之家文章链接
 				if (hideAdTips)
 					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
-				panel!.webview.html = '<head><style>' + (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
-					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition-duration:0.5s}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
+				panel!.webview.html = '<head><style>'
+					+ (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
+					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition:0.5s ease-in-out}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
 					+ `img.img-zoom{transform:scale(${imageScale})}` // 正文图片缩放
 					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 && commentImageScale != 1.0 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
 					+ `img.img-comment-zoom{transform:scale(${imageScale})}` // 评论图片缩放
@@ -577,6 +583,8 @@ export function activate(context: vscode.ExtensionContext) {
 					+ '.voted{outline:1px solid;font-weight:bold;text-decoration:none}' // 已投票样式
 					+ `.support{cursor:pointer;color:#28BD98;margin-right:3em}` // 支持样式
 					+ `.against{cursor:pointer;color:#FF6F6F}` // 反对样式
+					+ `.blur{filter:blur(0.5em)}`
+					+ `.blur:hover{filter:blur();transition:0.5s}`
 					+ '#scroll-to-top{position:absolute;width:40px;height:40px;right:5px;margin-top:calc(100vh - 65px);background-color:var(--vscode-button-background,#444);border-color:var(--vscode-button-border);border-radius:50%;cursor:pointer;box-shadow:1px 1px 1px rgba(0,0,0,.25);outline:none;display:flex;justify-content:center;align-items:center;}' // 回到顶部按钮样式
 					+ '#scroll-to-top:hover{background-color:var(--vscode-button-hoverBackground);box-shadow:2px 2px 2px rgba(0,0,0,.25);}' // 回到顶部按钮悬浮样式
 					+ '</style><script>'
