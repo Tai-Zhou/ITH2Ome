@@ -214,25 +214,30 @@ function commentVoteFormat(commentId: number, reply: number, support: number, ag
 	return `<span style="margin-right:3em">回复(${reply})</span><a class="${supportClass}support" onclick="voteCommentWebview(${commentId},${supportId},${reply},${support},${against})">支持(${support})</a><a class="${againstClass}against" onclick="voteCommentWebview(${commentId},${againstId},${reply},${support},${against})">反对(${against})</a>`;
 }
 
-function commentItemFormat(comment: commentJSON): string { // 生成评论
+function commentItemFormat(comment: commentJSON, idPrefix: string): string { // 生成评论
 	for (let i in ithomeEmoji)
 		comment.elements[0].content = comment.elements[0].content.replace(RegExp('\\[' + ithomeEmoji[i] + '\\]', 'g'), '<img style="width:1.3em;vertical-align:text-bottom" src=\'' + panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'ithomEmoji', i + '.svg'))) + '\'>');
 	let commentClass = "";
 	if (blurNegativeComment && comment.support < comment.against)
 		commentClass = "blur";
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<span class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}</span><div id="vote-${comment.id}">${commentVoteFormat(comment.id, comment.children.length, comment.support, comment.against, comment.voteStatus)}</div></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<span class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}</span><div id="vote-${idPrefix}${comment.id}">${commentVoteFormat(comment.id, comment.children.length, comment.support, comment.against, comment.voteStatus)}</div></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
 	if (commentList.length == 0)
 		return '';
 	let commentContent = `<h2>${commentTitle}</h2><ul>`;
+	let idPrefix = '';
+	if (commentTitle == '置顶评论')
+		idPrefix = 'top-';
+	else if (commentTitle == '热门评论')
+		idPrefix = 'hot-';
 	for (let comment of commentList) {
-		commentContent += commentItemFormat(comment);
+		commentContent += commentItemFormat(comment, idPrefix);
 		if (comment.children.length > 0) {
 			commentContent += '<ul>'
 			for (let reply of comment.children)
-				commentContent += commentItemFormat(reply) + '</li>';
+				commentContent += commentItemFormat(reply, idPrefix) + '</li>';
 			commentContent += '</ul>'
 		}
 		commentContent += '</li>'
@@ -613,7 +618,11 @@ export function activate(context: vscode.ExtensionContext) {
 						if (message.command == "refreshGrade") // 更新投票信息
 							document.getElementById("grade").innerHTML = message.text;
 						else if (message.command == "refreshVote") // 更新评论信息
-							document.getElementById("vote-"+message.id).innerHTML = message.text;
+							for (let prefix of ["top-", "hot-", ""]) {
+								let target = document.getElementById("vote-"+prefix+message.id);
+								if (target)
+									target.innerHTML = message.text;
+							}
 					});`
 					+ `</script></head><h1>${resNews.body.title}</h1>` // 标题
 					+ `<h3>新闻源：${resNews.body.newssource}（${resNews.body.newsauthor}）｜责编：${resNews.body.z}</h3>` // 新闻源、责编
