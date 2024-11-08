@@ -324,7 +324,7 @@
 		"@types/crypto-js": "^4.2.2",
 		"@types/node": "^22.9.0",
 		"@types/superagent": "^8.1.9",
-		"@types/vscode": "^1.95.0",
+		"@types/vscode": "^1.88.0",
 		"@typescript-eslint/eslint-plugin": "^8.13.0",
 		"@typescript-eslint/parser": "^8.13.0",
 		"@vscode/vsce": "^3.2.1",
