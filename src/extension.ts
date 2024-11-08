@@ -26,7 +26,13 @@ interface commentElementJSON {
 }
 
 interface commentPictureJSON {
-	src: string,
+	alt: string | null, // 替代文本
+	animation: boolean, // 是否为动画
+	height: number, // 高度
+	originSrc: string, // 原始图片链接
+	src: string, // 图片链接
+	thumbSrc: string, // 缩略图链接
+	width: number // 宽度
 }
 
 interface commentJSON {
@@ -198,7 +204,7 @@ function commentPictureFormat(pictures: commentPictureJSON[]) { // 生成评论�
 	let content = '<div style="text-align:center">';
 	for (let picture of pictures)
 		if (commentImageWidth > 0)
-			content += `<img class="comment" src="${atob(picture.src)}"` + (imageScaleMethod == 2 ? ' onclick="this.classList.toggle(\'img-comment-zoom\')"/>' : '/>')
+			content += `<img class="comment" src="${picture.src}"` + (imageScaleMethod == 2 ? ' onclick="this.classList.toggle(\'img-comment-zoom\')"/>' : '/>')
 		else
 			content += '#图片已屏蔽#'
 	return content + '</div>'
@@ -655,7 +661,7 @@ export function activate(context: vscode.ExtensionContext) {
 						mode: CryptoJS.mode.ECB,
 						padding: CryptoJS.pad.ZeroPadding
 					}).ciphertext.toString();
-					superagent.get(`https://cmt.ithome.com/apiv2/comment/getnewscomment?sn=${commentSN}${commentOrder ? '&latest=1' : ''}`).end((errComment: any, resComment: any) => {
+					superagent.get(`https://cmt.ithome.com/apiv2/comment/getnewscomment?sn=${commentSN}&appver=898${commentOrder ? '&latest=1' : ''}`).end((errComment: any, resComment: any) => {
 						let commentJSON = resComment.body;
 						if (commentJSON && commentJSON.content.topComments.length + commentJSON.content.hotComments.length + commentJSON.content.comments.length > 0)
 							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentFormat(commentJSON.content.topComments, '置顶评论') + commentFormat(commentJSON.content.hotComments, '热门评论') + commentFormat(commentJSON.content.comments, '最' + commentOrderWord + '评论'));
