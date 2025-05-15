@@ -37,6 +37,7 @@ interface commentPictureJSON {
 
 interface commentJSON {
 	against: number, // 反对
+	aiHint: string, // AI 提示
 	checkStatus: number,
 	children: commentJSON[] | null, // 回复评论
 	city: string, // 城市
@@ -45,7 +46,7 @@ interface commentJSON {
 	editStatusStr: any,
 	editTime: string,
 	elements: commentElementJSON[],
-	expandCount: number,
+	expandCount: number, // 回复展开数
 	floorStr: string, // 楼层
 	id: number, // 评论id
 	newsId: number, // 新闻 ID
@@ -231,7 +232,7 @@ function commentItemFormat(comment: commentJSON, idPrefix: string): string { // 
 	let commentClass = "";
 	if (blurNegativeComment && comment.support < comment.against)
 		commentClass = "blur";
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}${comment.tailClient > 0 ? '｜' + comment.tail : ''}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<span class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}</span><div id="vote-${idPrefix}${comment.id}">${commentVoteFormat(comment.id, comment.children ? comment.children.length : 0, comment.support, comment.against, comment.voteStatus)}</div></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}${comment.tailClient > 0 ? '｜' + comment.tail : ''}${comment.aiHint ? '｜' + comment.aiHint : ''}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<span class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(comment.elements[0].content)}${commentPictureFormat(comment.pictures)}</span><div id="vote-${idPrefix}${comment.id}">${commentVoteFormat(comment.id, comment.children ? comment.children.length : 0, comment.support, comment.against, comment.voteStatus)}</div></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -661,7 +662,7 @@ export function activate(context: vscode.ExtensionContext) {
 						mode: CryptoJS.mode.ECB,
 						padding: CryptoJS.pad.ZeroPadding
 					}).ciphertext.toString();
-					superagent.get(`https://cmt.ithome.com/apiv2/comment/getnewscomment?sn=${commentSN}&appver=898${commentOrder ? '&latest=1' : ''}`).end((errComment: any, resComment: any) => {
+					superagent.get(`https://cmt.ithome.com/apiv2/comment/getnewscomment?sn=${commentSN}&appver=900${commentOrder ? '&latest=1' : ''}`).end((errComment: any, resComment: any) => {
 						let commentJSON = resComment.body;
 						if (commentJSON && commentJSON.content.topComments.length + commentJSON.content.hotComments.length + commentJSON.content.comments.length > 0)
 							panel!.webview.html = panel!.webview.html.replace('<hr><h2>评论区加载中</h2>', commentFormat(commentJSON.content.topComments, '置顶评论') + commentFormat(commentJSON.content.hotComments, '热门评论') + commentFormat(commentJSON.content.comments, '最' + commentOrderWord + '评论'));
