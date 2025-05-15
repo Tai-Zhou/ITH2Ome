@@ -320,18 +320,20 @@
 		"esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
 		"deploy": "vsce publish"
 	},
+	"dependencies": {
+		"crypto-js": "^4.2.0",
+		"superagent": "^10.2.1"
+	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.2.2",
 		"@types/node": "^22.15.18",
 		"@types/superagent": "^8.1.9",
-		"@types/vscode": "^1.100.0",
+		"@types/vscode": "1.88.0",
 		"@typescript-eslint/eslint-plugin": "^8.32.1",
 		"@typescript-eslint/parser": "^8.32.1",
 		"@vscode/vsce": "^3.3.2",
-		"crypto-js": "^4.2.0",
-		"esbuild": "^0.24.2",
+		"esbuild": "^0.25.4",
 		"eslint": "^9.26.0",
-		"superagent": "^10.2.1",
 		"typescript": "^5.8.3"
 	}
 }
