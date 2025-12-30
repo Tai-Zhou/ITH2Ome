@@ -3,7 +3,7 @@ import * as path from 'path';
 import CryptoJS from 'crypto-js';
 const superagent = require('superagent');
 
-interface userInfo {
+interface userInfoJSON {
 	id: number, // ID
 	level: number, // 等级
 	link: string, // 主页
@@ -35,12 +35,25 @@ interface commentPictureJSON {
 	width: number // 宽度
 }
 
+interface deviceTailJSON {
+	client: number,
+	color: string, // 颜色
+	darkColor: string, // 深色模式颜色
+	extraTails: deviceTailJSON[], // 额外小尾巴
+	link: string, // 之家产品百科链接
+	name: string, // 名称
+	origClient: number,
+	origClientWithAppVersion: number,
+	productId: number,
+}
+
 interface commentJSON {
 	against: number, // 反对
 	aiHint: string, // AI 提示
 	checkStatus: number,
 	children: commentJSON[] | null, // 回复评论
 	city: string, // 城市
+	deviceTailModel: deviceTailJSON, // 设备小尾巴
 	editRole: any,
 	editStatus: number,
 	editStatusStr: any,
@@ -57,12 +70,12 @@ interface commentJSON {
 	referText: string, // 引文
 	replyCommentId: number, // 回复评论id
 	replyFloorStr: string, // 回复楼层
-	replyUserInfo: userInfo, // 回复用户信息
+	replyUserInfo: userInfoJSON, // 回复用户信息
 	support: number, // 支持
 	tail: string, // 尾巴（客户端）
 	tailClient: number,
 	tailLink: null,
-	userInfo: userInfo, // 用户信息
+	userInfo: userInfoJSON, // 用户信息
 	voteStatus: number, // 投票状态，需要 Bearer token 才能获取
 }
 class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
@@ -195,6 +208,22 @@ function numberFormat(num: number): string { // 中文数字显示格式化
 	return num >= 10000 ? (num / 10000).toFixed(1).toString() + '万' : num.toString();
 }
 
+function commentUserNickNameFormat(userInfo: userInfoJSON) {
+	if (userInfo.m == 1)
+		return `<span style="color:#3264b4">${userInfo.userNick}</span>`;
+	return userInfo.userNick;
+}
+
+function commentDeviceTailFormat(deviceTail: deviceTailJSON) {
+	if (!deviceTail)
+		return '';
+	let content = `｜<span style="color:${deviceTail.darkColor}">${deviceTail.name}</span>`;
+	if (deviceTail.extraTails)
+		for (let extraDevice of deviceTail.extraTails)
+			content += `｜<span style="color:${extraDevice.darkColor}">${extraDevice.name}</span>`;
+	return content;
+}
+
 function commentReplayFormt(comment: commentJSON) { // 生成回复
 	return `回复 ${comment.replyFloorStr} <strong>${comment.replyUserInfo.userNick}</strong>：`
 }
@@ -236,7 +265,7 @@ function commentItemFormat(comment: commentJSON, idPrefix: string): string { // 
 	let commentClass = "";
 	if (blurNegativeComment && comment.support < comment.against)
 		commentClass = "blur";
-	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${comment.userInfo.userNick}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}${comment.tailClient > 0 ? '｜' + comment.tail : ''}${comment.aiHint ? '｜' + comment.aiHint : ''}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<div class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(content)}${commentPictureFormat(comment.pictures)}</div><div id="vote-${idPrefix}${comment.id}">${commentVoteFormat(comment.id, comment.children ? comment.children.length : 0, comment.support, comment.against, comment.voteStatus)}</div></div>`;
+	return '<li style="margin:1em 0em">' + (showAvatar ? `<img class="avatar" src="${comment.userInfo.userAvatar}" onerror="this.src='${panel!.webview.asWebviewUri(vscode.Uri.file(path.join(extensionPath, 'img', 'noavatar.png')))}';this.onerror=null">` : '') + `<div style="margin-left:${showAvatar ? 5 : 0}em"><strong title="软媒通行证数字ID：${comment.userInfo.id}" style="font-size:1.2em">${commentUserNickNameFormat(comment.userInfo)}</strong> <sup>Lv.${comment.userInfo.level}｜${comment.city}${commentDeviceTailFormat(comment.deviceTailModel)}${comment.aiHint ? '｜' + comment.aiHint : ''}</sup><div style="float:right">${comment.floorStr} @ ${new Date(comment.postTime).toLocaleString('zh-CN')}</div>${comment.referText ? '<blockquote>' + comment.referText + '</blockquote>' : '<br>'}<div class="${commentClass}">${comment.replyFloorStr ? commentReplayFormt(comment) : ''}${linkFormat(content)}${commentPictureFormat(comment.pictures)}</div><div id="vote-${idPrefix}${comment.id}">${commentVoteFormat(comment.id, comment.children ? comment.children.length : 0, comment.support, comment.against, comment.voteStatus)}</div></div>`;
 }
 
 function commentFormat(commentList: commentJSON[], commentTitle: string): string { // 评论JSON生成列表
@@ -594,7 +623,7 @@ export function activate(context: vscode.ExtensionContext) {
 					resNews.body.detail = resNews.body.detail.replace(RegExp('<p class="ad-tips"[\\S]+</p>'), '');
 				panel!.webview.html = '<head><style>'
 					+ (resNews.body.btheme ? 'body{filter:grayscale(100%)}' : '') // 是否灰度
-					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition:0.5s ease-in-out}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
+					+ (imageWidth > 0 ? `img{width:${imageWidth}px;transition:0.5s}` + (imageScaleMethod < 2 && imageScale != 1.0 ? `img:${imageScaleMethodWord}{transform:scale(${imageScale})}` : '') : '') // 正文图片宽度、缩放
 					+ `img.img-zoom{transform:scale(${imageScale})}` // 正文图片缩放
 					+ (commentImageWidth > 0 ? `img.comment{width:${commentImageWidth}px}` + (imageScaleMethod < 2 && commentImageScale != 1.0 ? `img.comment:${imageScaleMethodWord}{transform:scale(${commentImageScale})}` : '') : '') // 评论图片宽度、缩放
 					+ `img.img-comment-zoom{transform:scale(${imageScale})}` // 评论图片缩放

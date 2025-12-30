@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.12.3",
+	"version": "1.12.4",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -322,18 +322,18 @@
 	},
 	"dependencies": {
 		"crypto-js": "^4.2.0",
-		"superagent": "^10.2.1"
+		"superagent": "^10.2.3"
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.2.2",
-		"@types/node": "^22.15.18",
+		"@types/node": "^25.0.3",
 		"@types/superagent": "^8.1.9",
 		"@types/vscode": "1.88.0",
-		"@typescript-eslint/eslint-plugin": "^8.32.1",
-		"@typescript-eslint/parser": "^8.32.1",
-		"@vscode/vsce": "^3.3.2",
-		"esbuild": "^0.25.4",
-		"eslint": "^9.26.0",
-		"typescript": "^5.8.3"
+		"@typescript-eslint/eslint-plugin": "^8.51.0",
+		"@typescript-eslint/parser": "^8.51.0",
+		"@vscode/vsce": "^3.7.1",
+		"esbuild": "^0.27.2",
+		"eslint": "^9.39.2",
+		"typescript": "^5.9.3"
 	}
 }
