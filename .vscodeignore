@@ -7,3 +7,4 @@ src/
 .vscodeignore
 pnpm-lock.yaml
 tsconfig.json
+AGENTS.md
