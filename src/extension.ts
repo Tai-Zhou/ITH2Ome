@@ -83,6 +83,7 @@ class ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shar
 }
 
 let extensionPath: string; // 插件路径
+let extensionContext: vscode.ExtensionContext; // 插件上下文
 let panel: vscode.WebviewPanel | undefined = undefined; // 查看内容窗口
 let ithomeEmoji = ["爱你", "爱心", "挨揍", "暗中观察", "白鸡", "抱拳", "比心", "闭嘴", "不好惹的鸡", "不是吧", "不咋行", "不正经滑稽", "擦鼻血", "菜刀", "菜花", "超大的么么哒", "差强人意", "吃瓜", "吃惊", "呲牙笑", "大边框", "戴口罩", "大哭", "打脸", "大拇指", "弹出式摄像头", "蛋糕", "打你脸", "大眼卖萌", "对眼滑稽", "二哈", "烦", "非常惊讶", "愤怒", "佛系", "感兴趣", "给点吗", "狗头", "狗头不敢相信", "狗头斜眼", "害羞", "好的", "好的呀", "哈欠", "哈士奇", "嘿哈", "黑脸", "黑脸流汗", "红花", "坏笑", "滑稽", "滑稽鸡", "黄花", "惊讶", "囧", "拒绝", "考拉呆住", "可爱", "可爱滑稽", "酷", "苦脸", "骷髅", "苦中作乐", "蓝花", "老哥稳", "蜡烛", "流鼻血", "刘海屏", "流汗", "流汗滑稽", "路", "绿帽子", "马", "猫", "迷惑", "南", "南倒了", "念经", "你看我有在笑啊", "柠檬精", "你说啥", "牛", "哦吼", "胖次滑稽", "喷", "喷鼻血", "啤酒", "铺路", "强颜欢笑", "恰柠檬", "潜水", "庆祝", "拳头", "让我康康", "如花", "色", "胜利", "什么鬼", "手掌", "衰", "双挖孔屏", "水滴屏", "睡觉", "太阳", "摊手", "舔狗", "偷看", "吐", "托脸", "秃头", "兔子", "挖槽屏", "委屈", "委屈哭", "微笑", "握手", "我挺好的", "五瓣花", "捂脸笑哭", "相机", "小恶魔", "小黄鸡", "小鸡", "笑哭", "小拇指", "行吧行吧", "熊猫", "嘘", "药丸", "一本正经", "阴险笑", "幽灵", "右挖孔屏", "原谅他", "晕", "再见", "赞", "炸弹", "炸弹狂", "这个好这个好", "真服了", "猪", "专业团队", "左挖孔屏", "之家", "水库", "六六六", "发抖", "感谢", "期待"]; // 之家表情包
 let config: vscode.WorkspaceConfiguration; // 所有设置信息
@@ -121,9 +122,20 @@ const lastRead: vscode.TreeItem = {
 	command: { title: '刷新', command: 'ith2ome.latestRefresh' }
 };
 
-function refreshConfig() { // 刷新设置，仅在手动刷新时运行
+async function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	config = vscode.workspace.getConfiguration('ith2ome');
-	userHash = <string>config.get('account');
+	const secretsHash = await extensionContext.secrets.get('account');
+	if (secretsHash) {
+		userHash = secretsHash;
+	} else {
+		const settingsHash = <string>config.get('account');
+		if (settingsHash) {
+			userHash = settingsHash;
+			await extensionContext.secrets.store('account', settingsHash);
+		} else {
+			userHash = '';
+		}
+	}
 	signReminder = <boolean>config.get('signReminder');
 	showPreviewImages = <boolean>config.get('showPreviewImages');
 	titleLength = Math.max(<number>config.get('titleLength'), 0);
@@ -209,7 +221,9 @@ function numberFormat(num: number): string { // 中文数字显示格式化
 }
 
 function commentUserNickNameFormat(userInfo: userInfoJSON) {
-	if (userInfo.m == 1)
+	if (userInfo.m == 9)
+		return `<span style="color:#3264b4">${userInfo.userNick}</span>`;
+	else if (userInfo.m == 1)
 		return `<span style="color:#3264b4">${userInfo.userNick}</span>`;
 	return userInfo.userNick;
 }
@@ -375,10 +389,11 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 				this.update.fire();
 			}
 			else {
-				superagent.get(`https://my.ruanmei.com/api/User/Get?userHash=${userHash}&extra`).end((err: any, res: any) => {
+				superagent.get(`https://my.ruanmei.com/api/User/Get?userHash=${userHash}&extra`).end(async (err: any, res: any) => {
 					if (!res.body.ok) { // 失败
 						userHash = '';
-						config.update('account', '', true);
+						await extensionContext.secrets.delete('account');
+						await config.update('account', '', true);
 						vscode.window.showErrorMessage('登录失败，请检查 Cookie。');
 						this.refresh();
 						return;
@@ -511,9 +526,10 @@ class contentProvider implements vscode.TreeDataProvider<ith2omeItem> { // 为 V
 	}
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	extensionPath = context.extensionPath;
-	refreshConfig();
+	extensionContext = context;
+	await refreshConfig();
 	period = <number>config.get('defaultPeriod'); // 仅在启动时从设置中读取
 	let account = new contentProvider(0);
 	let latest = new contentProvider(1);
@@ -529,19 +545,18 @@ export function activate(context: vscode.ExtensionContext) {
 				ignoreFocusOut: true,
 				placeHolder: '请在此处输入您的 Cookie',
 				prompt: '获取 Cookie 的方法可查看插件说明'
-			}).then((hash = '') => {
+			}).then(async (hash = '') => {
 				userHash = hash;
-				config.update('account', hash, true).then(() => {
-					account.refresh();
-				});
-			});
-		}),
-		vscode.commands.registerCommand('ith2ome.logout', () => { // 退出通行证
-			userHash = '';
-			config.update('account', '', true).then(() => {
-				vscode.window.showInformationMessage('退出成功！');
+				await extensionContext.secrets.store('account', hash);
 				account.refresh();
 			});
+		}),
+		vscode.commands.registerCommand('ith2ome.logout', async () => { // 退出通行证
+			userHash = '';
+			await extensionContext.secrets.delete('account');
+			await config.update('account', '', true);
+			vscode.window.showInformationMessage('退出成功！');
+			account.refresh();
 		}),
 		vscode.commands.registerCommand('ith2ome.accountRefresh', () => { // 刷新“通行证”
 			refreshConfig();

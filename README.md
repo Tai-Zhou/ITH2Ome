@@ -42,7 +42,8 @@ IT之家第三方插件，划水特供版。
 3. 在通行证页面打开开发者工具，并选择控制台（Console）；
 4. 输入 `document.cookie`；
 5. 复制 `user=hash=` 之后的部分，例如 `user=hash=20110515TOPOSINF`，则复制 `20110515TOPOSINF`；
-6. 粘贴至插件输入框中，或是手动修改 `ith2ome.account` 设置。
+6. 粘贴至插件输入框中 ~~，或是手动修改 `ith2ome.account` 设置~~；
+7. `cookie` 会保存到 [`ExtensionContext.secrets`](https://code.visualstudio.com/api/references/vscode-api#ExtensionContext.secrets) 中，[不再进行同步](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage)。
 
 除上述 `cookie` 外，本插件**不保存**任何用户信息，**不记录、上传、保存**任何用户使用数据。请您妥善保管您的设置，以防个人信息泄露。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。[VS Code 插件市场](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
 
