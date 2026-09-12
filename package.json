@@ -2,7 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.12.5",
+	"version": "1.12.6",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -200,7 +200,12 @@
 				"ith2ome.showPreviewImages": {
 					"type": "boolean",
 					"default": true,
-					"description": "预览内容时是否显示图片。"
+					"description": "（迁移至 ith2ome.previewImageWidth）预览内容时是否显示图片。"
+				},
+				"ith2ome.previewImageWidth": {
+					"type": "integer",
+					"default": 240,
+					"description": "预览内容时显示图片最大像素宽度，设置为 0 时不显示图片。"
 				},
 				"ith2ome.titleLength": {
 					"type": "integer",
@@ -318,7 +323,10 @@
 		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
 		"esbuild": "npm run esbuild-base -- --sourcemap",
 		"esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-		"deploy": "vsce publish --no-dependencies"
+		"package": "vsce package --no-dependencies",
+		"verify": "vsce verify-pat && ovsx verify-pat",
+		"deploy": "vsce publish --no-dependencies",
+		"deploy:ovsx": "ovsx publish --no-dependencies"
 	},
 	"dependencies": {
 		"crypto-js": "^4.2.0",
@@ -326,14 +334,15 @@
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.2.2",
-		"@types/node": "^25.6.0",
-		"@types/superagent": "^8.1.9",
+		"@types/node": "^26.5.0",
+		"@types/superagent": "^8.1.11",
 		"@types/vscode": "1.88.0",
-		"@typescript-eslint/eslint-plugin": "^8.59.0",
-		"@typescript-eslint/parser": "^8.59.0",
-		"@vscode/vsce": "^3.9.1",
-		"esbuild": "^0.28.0",
-		"eslint": "^10.2.1",
+		"@typescript-eslint/eslint-plugin": "^8.70.0",
+		"@typescript-eslint/parser": "^8.70.0",
+		"@vscode/vsce": "^3.9.2",
+		"esbuild": "^0.28.2",
+		"eslint": "^10.10.0",
+		"ovsx": "^1.2.0",
 		"typescript": "^6.0.3"
 	}
 }

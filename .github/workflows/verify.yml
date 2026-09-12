@@ -1,15 +1,15 @@
-name: Publish
+name: Verify
 permissions:
   contents: read
 
 on:
-  release:
-    types:
-      - created
-  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,14 +24,16 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # 打包一次，同一个 VSIX 发布到两个 registry
       - name: Package VSIX
         run: pnpm run package
-      - name: Publish to VS Code Marketplace
+      # 凭据验证需要 secrets，PR（尤其 fork）拿不到，只在 push 时跑
+      - name: Verify VS Code Marketplace credentials
+        if: github.event_name == 'push'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: pnpm exec vsce publish --packagePath ith2ome-*.vsix --no-dependencies
-      - name: Publish to Open VSX
+        run: pnpm exec vsce verify-pat
+      - name: Verify Open VSX credentials
+        if: github.event_name == 'push'
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: pnpm exec ovsx publish ith2ome-*.vsix
+        run: pnpm exec ovsx verify-pat
