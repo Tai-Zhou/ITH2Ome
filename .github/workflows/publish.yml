@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # 打包一次，同一个 VSIX 发布到两个 registry
+      # 打包一次，同一个 VSIX 发到两个 registry
       - name: Package VSIX
         run: pnpm run package
       - name: Publish to VS Code Marketplace
