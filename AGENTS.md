@@ -7,7 +7,7 @@ IT之家第三方 VS Code 插件，划水特供版。
 - TypeScript
 - VS Code Extension API
 - esbuild (打包)
-- pnpm (包管理)
+- pnpm (包管理，版本由 `package.json` 的 `packageManager` 固定，workflow 里不写 `version`)
 
 ## 常用命令
 

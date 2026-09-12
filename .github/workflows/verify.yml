@@ -14,13 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
+        uses: pnpm/action-setup@v6
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
@@ -28,7 +26,7 @@ jobs:
       - name: Package VSIX
         run: pnpm run package
       # 凭据验证需要 secrets，PR（尤其 fork）拿不到，故只在 push / 手动触发时跑。
-      # verify-pat 走的 Marketplace 接口偶发超时，故重试且不阻断后续步骤。
+      # verify-pat 走的 Marketplace 接口偶发超时，故不阻断后续步骤。
       - name: Verify VS Code Marketplace credentials
         if: github.event_name != 'pull_request'
         continue-on-error: true
