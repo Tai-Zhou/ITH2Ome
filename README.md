@@ -42,10 +42,10 @@ IT之家第三方插件，划水特供版。
 3. 在通行证页面打开开发者工具，并选择控制台（Console）；
 4. 输入 `document.cookie`；
 5. 复制 `user=hash=` 之后的部分，例如 `user=hash=20110515TOPOSINF`，则复制 `20110515TOPOSINF`；
-6. 粘贴至插件输入框中 ~~，或是手动修改 `ith2ome.account` 设置~~；
+6. 粘贴至插件输入框中；
 7. `cookie` 会保存到 [`ExtensionContext.secrets`](https://code.visualstudio.com/api/references/vscode-api#ExtensionContext.secrets) 中，[不进行同步](https://code.visualstudio.com/api/extension-capabilities/common-capabilities#data-storage)。
 
-除上述 `cookie` 外，本插件**不保存**任何用户信息，**不记录、上传、保存**任何用户使用数据。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。[VS Code 插件市场](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
+除上述 `cookie` 外，本插件**不保存**任何用户信息，**不记录、上传、保存**任何用户使用数据。分享时，本插件会将文本内容写入系统剪贴板，**不包含**读取剪贴板功能。[VS Code](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome) 和 [Open VSX](https://open-vsx.org/extension/astro-tai/ith2ome) 插件市场发布版本的上传均由 [GitHub Action](.github/workflows/publish.yml) 完成，与本页面公开代码内容一致。
 
 ## 常见问题
 ### 给文章打分后人数没有增加/分数不对
@@ -64,7 +64,7 @@ IT之家第三方插件，划水特供版。
 
 ## 帮助本项目
 
-作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）和“面向人工智能编程”（Artificial Intelligence Oriented Programming, AIOP）的方法实现。首次接触 `TypeScript` 与 VS Code 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。如果您喜欢本项目，还请您在 [GitHub 项目主页](https://github.com/Tai-Zhou/ITH2Ome)给一颗星星，或是在 [VS Code 插件市场](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)留下您的评论。作者会在工作学业之余更新维护本项目，还请您保持耐心。
+作者为学习了解 `TypeScript` 而创建了本项目，并以“面向搜索引擎编程”（Search Engine Oriented Programming, SEOP）和“面向人工智能编程”（Artificial Intelligence Oriented Programming, AIOP）的方法实现。首次接触 `TypeScript` 与 VS Code 插件开发，漏洞与错误在所难免，敬请谅解。您可以通过[创建 issue](https://github.com/Tai-Zhou/ITH2Ome/issues/new/choose) 或是[提交 PR](https://github.com/Tai-Zhou/ITH2Ome/compare) 的方式帮助改进本项目。如果您喜欢本项目，还请您在 [GitHub 项目主页](https://github.com/Tai-Zhou/ITH2Ome)给一颗星星，在 [VS Code](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome) 或 [Open VSX](https://open-vsx.org/extension/astro-tai/ith2ome) 插件市场留下您的宝贵评论。作者会在工作学业之余更新维护本项目，还请您保持耐心。
 
 ## 许可证
 

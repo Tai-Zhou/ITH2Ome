@@ -10,6 +10,9 @@
 		"skipLibCheck": true,
 		"sourceMap": true,
 		"strict": true,
+		"types": [
+			"node"
+		],
 		"esModuleInterop": true
 	},
 	"include": [

@@ -330,13 +330,11 @@
 		"deploy:ovsx": "ovsx publish --no-dependencies"
 	},
 	"dependencies": {
-		"crypto-js": "^4.2.0",
-		"superagent": "^10.3.0"
+		"crypto-js": "^4.2.0"
 	},
 	"devDependencies": {
 		"@types/crypto-js": "^4.2.2",
 		"@types/node": "^26.5.0",
-		"@types/superagent": "^8.1.11",
 		"@types/vscode": "1.88.0",
 		"@typescript-eslint/eslint-plugin": "^8.70.0",
 		"@typescript-eslint/parser": "^8.70.0",
