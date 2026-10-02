@@ -29,13 +29,6 @@ jobs:
       # verify-pat 走的 Marketplace 接口偶发超时，故不阻断后续步骤。
       - name: Verify VS Code Marketplace credentials
         if: github.event_name != 'pull_request'
-        continue-on-error: true
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: pnpm exec vsce verify-pat
-      - name: Verify Open VSX credentials
-        if: github.event_name != 'pull_request'
-        continue-on-error: true
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: pnpm exec ovsx verify-pat

@@ -1,6 +1,7 @@
 name: Publish
 permissions:
   contents: read
+  id-token: write
 
 on:
   release:
@@ -30,6 +31,4 @@ jobs:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: pnpm exec vsce publish --packagePath ith2ome-*.vsix --no-dependencies
       - name: Publish to Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: pnpm exec ovsx publish ith2ome-*.vsix
+        run: pnpm exec ovsx publish --trusted-publishing ith2ome-*.vsix
