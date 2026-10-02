@@ -47,19 +47,28 @@
 			"ith2ome": [
 				{
 					"id": "ith2ome.account",
-					"name": "通行证"
+					"name": "通行证",
+					"icon": "img/icon.svg"
 				},
 				{
 					"id": "ith2ome.latest",
-					"name": "最新"
+					"name": "最新",
+					"icon": "img/icon.svg"
 				},
 				{
 					"id": "ith2ome.hot",
-					"name": "热榜"
+					"name": "热榜",
+					"icon": "img/icon.svg"
 				},
 				{
 					"id": "ith2ome.comment",
-					"name": "热评"
+					"name": "热评",
+					"icon": "img/icon.svg"
+				},
+				{
+					"id": "ith2ome.calendar",
+					"name": "日历",
+					"icon": "img/icon.svg"
 				}
 			]
 		},

@@ -1,10 +1,13 @@
 # ITH<sub>2</sub>Ome
 
-*IT, H<sub>2</sub>O, and me.*
+[![Version](https://vsmarketplacebadges.dev/version-short/astro-tai.ith2ome.svg?label=Version)](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)
+[![VS Marketplace Installs](https://vsmarketplacebadges.dev/installs-short/astro-tai.ith2ome.svg?label=VS+Marketplace+Installs)](https://marketplace.visualstudio.com/items?itemName=astro-tai.ith2ome)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/astro-tai/ith2ome?label=Open+VSX+Downloads)](https://open-vsx.org/extension/astro-tai/ith2ome)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/tai-zhou/ith2ome/blob/main/LICENSE)
 
-This extension is provided for those who can read **Chinese**.
+[IT之家](https://www.ithome.com)第三方插件，划水特供版。*IT, H<sub>2</sub>O, and me.*
 
-IT之家第三方插件，划水特供版。
+A third-party extension for browsing [ITHome](https://www.ithome.com), a Chinese technology portal.
 
 - [功能](#功能)
   - [视图](#视图)
@@ -20,14 +23,14 @@ IT之家第三方插件，划水特供版。
 ## 功能
 ### 视图
 
-本插件包含“通行证”，“最新”，“热榜”与“热评”四个视图。
+本插件包含“通行证”，“最新”，“热榜”，“热评”与“日历”五个视图。
 
 * 通行证：通过 `cookie` 登录，可显示登录天数、经验等级、签到等信息。自动刷新时间间隔为 `3600` 秒，即一小时。
 * 最新：IT之家最新发布信息，可自定义屏蔽词与关键词。
 * 热榜：分为“日榜”、“周榜”与“月榜”三个榜单，可点击按钮切换子榜单，每个榜单显示12条内容，点击右侧图标可在浏览器中查看完整内容。自动刷新时间间隔为 `86400` 秒，即一天。
 * 热评：标题数字为该条评论点赞数。自动刷新时间间隔为 `86400` 秒，即一天。
 
-对于“最新”，“热榜”与“热评”三个视图，点击各视图标题右侧刷新按钮可手动刷新榜单，并重置下次自动刷新时间；鼠标悬浮可预览新闻相关信息，点击可在 VS Code 内查看内容，点击每条内容右侧图标可在浏览器中查看完整内容（建议将IT之家网址加入受信任的域以避免弹窗）。
+对于“最新”，“热榜”与“热评”三个视图，点击各视图标题右侧刷新按钮可手动刷新榜单，并重置下次自动刷新时间；鼠标悬浮可预览新闻相关信息，点击可在编辑器内查看内容，点击每条内容右侧图标可在浏览器中查看完整内容（建议将IT之家网址加入受信任的域以避免弹窗）。
 
 ### 启动
 

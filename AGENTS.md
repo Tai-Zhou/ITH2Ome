@@ -55,6 +55,22 @@ npx eslint src/
 - 使用 tab 缩进
 - 遵循 ESLint 默认规则
 
+### 命名规范
+
+| 类型                             | 规范               | 示例                       |
+| :------------------------------- | :----------------- | :------------------------- |
+| 类、接口、类型别名、枚举名       | `PascalCase`       | `interface UserInfo`       |
+| 枚举成员                         | `PascalCase`       | `Kind.Latest`              |
+| 函数、方法、属性、局部变量、参数 | `camelCase`        | `function refreshConfig()` |
+| 常量（模块级）                   | `UPPER_SNAKE_CASE` | `const MAX_RETRIES = 3;`   |
+| 类型参数                         | 单字母或 `T` 前缀  | `T`、`TKey`、`TResult`     |
+
+- 接口不加 `I` 前缀：用 `Foo`，不用 `IFoo`。
+- 布尔值用 `is` / `has` / `can` / `should` 前缀：`isSignedIn`。
+- 私有成员不加 `_` 前缀：用 `private` 字段或 `#` 私有字段。
+- 类型建模优先用字符串字面量联合 + `as const`，避免 `enum` 产生运行时代码。
+- 遍历数组用 `for...of` / `entries()`，遍历对象用 `Object.entries()`，禁止用 `for...in` 遍历数组。
+
 ## 内容跳转约定
 
 - 内容分两种：普通文章（`mode = 'news'`，`id` 为 `newsid`）与专题（`mode = 'topic'`，`id` 为 url 中 `/zt/` 后的 slug）。
