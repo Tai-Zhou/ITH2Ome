@@ -256,20 +256,10 @@
 		"configuration": {
 			"title": "ITH2Ome",
 			"properties": {
-				"ith2ome.account": {
-					"type": "string",
-					"default": "",
-					"description": "通行证 Cookie。"
-				},
 				"ith2ome.signReminder": {
 					"type": "boolean",
 					"default": true,
 					"description": "未签到时是否提醒。"
-				},
-				"ith2ome.showPreviewImages": {
-					"type": "boolean",
-					"default": true,
-					"description": "（迁移至 ith2ome.previewImageWidth）预览内容时是否显示图片。"
 				},
 				"ith2ome.previewImageWidth": {
 					"type": "integer",

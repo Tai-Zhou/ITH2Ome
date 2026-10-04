@@ -91,7 +91,6 @@ let config: vscode.WorkspaceConfiguration; // 所有设置信息
 let userHash: string = ''; // 通行证 Cookie
 let userId: number = -1; // 用户 ID
 let signReminder: boolean; // 签到提醒
-let showPreviewImages: boolean; // 显示预览图片
 let previewImageWidth: number; // 预览图片宽度
 let titleLength: number; // 标题显示长度
 let imageWidth: number; // 正文图片显示宽度
@@ -137,19 +136,8 @@ async function getText(url: string): Promise<{ ok: boolean, text: string }> { //
 async function refreshConfig() { // 刷新设置，仅在手动刷新时运行
 	config = vscode.workspace.getConfiguration('ith2ome');
 	userHash = await extensionContext.secrets.get('account') ?? '';
-	const settingsHash = <string>config.get('account');
-	if (settingsHash != '') {
-		await config.update('account', '', true);
-		vscode.window.showInformationMessage('为确保安全，已清除设置中的 Cookie');
-	}
 	signReminder = <boolean>config.get('signReminder');
-	showPreviewImages = <boolean>config.get('showPreviewImages');
 	previewImageWidth = <number>config.get('previewImageWidth');
-	if (!showPreviewImages) {
-		previewImageWidth = 0;
-		await config.update('previewImageWidth', 0, true);
-		await config.update('showPreviewImages', true, true);
-	}
 	titleLength = Math.max(<number>config.get('titleLength'), 0);
 	imageWidth = <number>config.get('imageWidth');
 	imageScale = <number>config.get('imageScale');
