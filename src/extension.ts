@@ -78,8 +78,9 @@ interface CommentJSON {
 	voteStatus: number, // 投票状态，需要 Bearer token 才能获取
 }
 
-class Ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接
+class Ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接、children 用于层级树
 	shareInfo?: string;
+	children?: Ith2omeItem[];
 }
 
 let extensionPath: string; // 插件路径
@@ -207,6 +208,36 @@ function specialTopicSlug(url: string): string { // 检查链接是否为专题�
 
 function contentKey(news: any): string { // 内容唯一键：专题用 slug，文章用 newsid
 	return specialTopicSlug(news.url) || String(news.newsid);
+}
+
+function eventUrl(link: string): string { // 事件详情页链接
+	let id = link.match(RegExp('(?<=event\\?id=)\\d+'));
+	return id ? 'https://img.ithome.com/app/calendar/event_detail.html?id=' + id[0] : '';
+}
+
+function dateKey(date: Date): string { // 日期键：YYYY-MM-DD
+	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseDateKey(text: string): Date | undefined { // 解析 YYYYMMDD，或仅 MMDD（自动补当前年份）
+	let match = text.trim().match(RegExp('^(\\d{4})?(\\d{2})(\\d{2})$'));
+	if (!match)
+		return undefined;
+	let year = match[1] ? Number(match[1]) : new Date().getFullYear();
+	let month = Number(match[2]);
+	let day = Number(match[3]);
+	let date = new Date(year, month - 1, day);
+	return date.getFullYear() == year && date.getMonth() == month - 1 && date.getDate() == day ? date : undefined;
+}
+
+function eventDateFormat(value: string, options: Intl.DateTimeFormatOptions): string { // 事件日期格式化（日期部分按日历日）
+	let [year, month, day] = value.substring(0, 10).split('-');
+	return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString('zh-CN', options);
+}
+
+function eventTimeFormat(value: string): string { // 事件时刻格式化（按系统时区）
+	let date = new Date(value);
+	return isNaN(date.getTime()) ? '' : date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function newsFormat(news: any, icon: string): Ith2omeItem { // TreeItem 对象格式化
@@ -660,22 +691,104 @@ class CommentProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 热�
 }
 
 
-class CalendarProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 为 View 提供内容
+class CalendarProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 日历
 	update = new vscode.EventEmitter<void>(); // 用于触发刷新
 	readonly onDidChangeTreeData = this.update.event;
-	list: Ith2omeItem[] = []; // 项目列表
-	idSet: Set<string> = new Set(); // 文章 ID 集合
+	list: Ith2omeItem[] = []; // 根级项目列表（日期父节点与“加载更多数据”）
+	idSet: Set<string> = new Set(); // 事件 ID 集合
+	dateMap: Map<string, Ith2omeItem> = new Map(); // 日期父节点集合，跨“加载更多”保留
 	refreshTimer: NodeJS.Timeout | undefined; // 自动刷新计时器
+	stamp: string = ''; // 信息流分页标记
+	date: Date = new Date(); // 日程起始日期
 
 	constructor() {
 		this.refresh();
 	}
-	refresh() {
-		// https://img.ithome.com/app/calendar/event_list.html
+	shift(month: number, day: number) { // 前后翻月、翻日
+		this.date = new Date(this.date.getFullYear(), this.date.getMonth() + month, this.date.getDate() + day);
+		this.refresh();
+	}
+	today() { // 回到今天
+		this.date = new Date();
+		this.refresh();
+	}
+	jumpTo(date: Date) { // 跳转到指定日期
+		this.date = date;
+		this.refresh();
+	}
+	refresh(loadMore: boolean = false) { // false 为手动刷新，true 为加载更多
+		if (this.refreshTimer)
+			clearTimeout(this.refreshTimer); // 清除下一次自动刷新计时器
+		if (loadMore)
+			this.list.pop(); // 移除“加载更多数据”
+		else { // 手动刷新时清空项目列表
+			this.list = [];
+			this.idSet.clear();
+			this.dateMap.clear();
+			this.stamp = '';
+		}
+		let url = 'https://napi.ithome.com/api/newsevent/geteventfeed?forward=true&timeZone=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		if (this.stamp != '') // 加载更多只能传 stamp，与 date 同时传会被接口忽略
+			url += '&stamp=' + encodeURIComponent(this.stamp);
+		else
+			url += '&date=' + dateKey(this.date);
+		getJSON(url).then(res => {
+			let data = res.body.data;
+			this.stamp = data.stamp;
+			for (let feed of data.list) {
+				if (feed.feedType != 10026) // 仅处理事件分组
+					continue;
+				let anchor = feed.feedContent.anchor; // 分组所属日期
+				let parent = this.dateMap.get(anchor);
+				if (!parent) { // 同一日期只建一个父节点，跨“加载更多”复用
+					parent = {
+						label: eventDateFormat(anchor, Number(anchor.substring(0, 4)) == new Date().getFullYear()
+							? { month: 'long', day: 'numeric' } // 当前年份不显示年份
+							: { year: 'numeric', month: 'long', day: 'numeric' }),
+						contextValue: 'ith2ome.calendarDate',
+						description: eventDateFormat(anchor, { weekday: 'long' }),
+						id: 'date' + anchor,
+						collapsibleState: vscode.TreeItemCollapsibleState.Expanded,
+						children: []
+					};
+					this.dateMap.set(anchor, parent);
+					this.list.push(parent);
+				}
+				for (let event of feed.feedContent.items) {
+					let link = eventUrl(event.link);
+					if (link == '' || this.idSet.has(link)) // 跳过异常链接与重复事件
+						continue;
+					this.idSet.add(link);
+					let timeText = event.timeNotdecided ? '' : eventTimeFormat(event.realTime);
+					let time = timeText == '' ? '待定' : timeText;
+					let place = event.eventPlace ? event.eventPlace : (event.online ? '线上' : '');
+					let realTime = timeText == '' ? eventDateFormat(event.realTime, { year: 'numeric', month: 'numeric', day: 'numeric' }) : new Date(event.realTime).toLocaleString('zh-CN');
+					let tooltip = new vscode.MarkdownString(`**${event.title}**\n\n${realTime}${place != '' ? '｜' + place : ''}`);
+					parent.children!.push({
+						label: time + '｜' + event.title,
+						contextValue: 'ith2ome.article',
+						iconPath: new vscode.ThemeIcon('calendar'),
+						id: 'event' + link,
+						description: place,
+						resourceUri: vscode.Uri.parse(link),
+						tooltip: tooltip,
+						shareInfo: `标题：${event.title}\n时间：${realTime}\n地点：${place}\n`
+					});
+				}
+			}
+			if (data.hasMore)
+				this.list.push({
+					label: '加载更多数据',
+					iconPath: new vscode.ThemeIcon('eye'),
+					command: { title: '加载更多数据', command: 'ith2ome.calendarRefresh', arguments: [true] }
+				});
+			this.update.fire();
+		});
+		this.refreshTimer = setTimeout(() => { this.refresh(); }, 86400000); // 设置自动刷新时间
 	}
 	getChildren(element?: Ith2omeItem): vscode.TreeItem[] { // 获取项目列表
 		if (element)
-			return [];
+			return element.children ?? [];
 		return this.list;
 	}
 	getTreeItem(element: Ith2omeItem): vscode.TreeItem { // 获取项目
@@ -918,6 +1031,38 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('ith2ome.commentRefresh', () => {  // 刷新“热评”
 			refreshConfig();
 			comment.refresh();
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarRefresh', (loadMore: boolean) => { // 刷新“日历”，手动刷新回到今天
+			refreshConfig();
+			if (typeof loadMore == 'boolean' && loadMore) // 有时 VS Code 会返回一个 ith2omeItem，原因不明
+				calendar.refresh(true); // 加载更多，保持当前起始日
+			else
+				calendar.today(); // 手动刷新回到今天
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarPrevMonth', () => { // “日历”前翻一月
+			calendar.shift(-1, 0);
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarPrevWeek', () => { // “日历”前翻一周
+			calendar.shift(0, -7);
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarGoto', async () => { // “日历”跳转到指定日期
+			let value = await vscode.window.showInputBox({
+				prompt: '请输入要跳转的日期',
+				placeHolder: 'YYYYMMDD，或仅 MMDD（默认当前年份）',
+				value: dateKey(calendar.date).replaceAll('-', ''),
+				validateInput: text => parseDateKey(text) ? undefined : '请输入 YYYYMMDD 或 MMDD 格式的有效日期'
+			});
+			if (value == undefined)
+				return;
+			let date = parseDateKey(value);
+			if (date)
+				calendar.jumpTo(date);
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarNextWeek', () => { // “日历”后翻一周
+			calendar.shift(0, 7);
+		}),
+		vscode.commands.registerCommand('ith2ome.calendarNextMonth', () => { // “日历”后翻一月
+			calendar.shift(1, 0);
 		})
 	);
 }
