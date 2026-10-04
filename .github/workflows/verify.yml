@@ -23,6 +23,10 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+      - name: Lint
+        run: pnpm exec oxlint src/
       - name: Package VSIX
         run: pnpm run package
       # 凭据验证需要 secrets，PR（尤其 fork）拿不到，故只在 push / 手动触发时跑。
@@ -31,4 +35,4 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: pnpm exec vsce verify-pat
+        run: pnpm run verify

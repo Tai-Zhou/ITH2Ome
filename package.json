@@ -2,8 +2,7 @@
 	"name": "ith2ome",
 	"displayName": "ITH2Ome",
 	"description": "IT之家第三方插件，划水特供版",
-	"version": "1.12.6",
-	"packageManager": "pnpm@12.4.1",
+	"version": "1.13.0",
 	"author": "https://github.com/Tai-Zhou",
 	"repository": {
 		"type": "git",
@@ -131,6 +130,36 @@
 				"command": "ith2ome.commentRefresh",
 				"title": "刷新",
 				"icon": "$(refresh)"
+			},
+			{
+				"command": "ith2ome.calendarPrevMonth",
+				"title": "上月",
+				"icon": "$(arrow-left)"
+			},
+			{
+				"command": "ith2ome.calendarPrevWeek",
+				"title": "上周",
+				"icon": "$(arrow-small-left)"
+			},
+			{
+				"command": "ith2ome.calendarGoto",
+				"title": "跳转",
+				"icon": "$(calendar)"
+			},
+			{
+				"command": "ith2ome.calendarNextWeek",
+				"title": "下周",
+				"icon": "$(arrow-small-right)"
+			},
+			{
+				"command": "ith2ome.calendarNextMonth",
+				"title": "下月",
+				"icon": "$(arrow-right)"
+			},
+			{
+				"command": "ith2ome.calendarRefresh",
+				"title": "刷新",
+				"icon": "$(refresh)"
 			}
 		],
 		"menus": {
@@ -174,6 +203,36 @@
 					"command": "ith2ome.commentRefresh",
 					"when": "view == ith2ome.comment",
 					"group": "navigation"
+				},
+				{
+					"command": "ith2ome.calendarPrevMonth",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@0"
+				},
+				{
+					"command": "ith2ome.calendarPrevWeek",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@1"
+				},
+				{
+					"command": "ith2ome.calendarGoto",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@2"
+				},
+				{
+					"command": "ith2ome.calendarNextWeek",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@3"
+				},
+				{
+					"command": "ith2ome.calendarNextMonth",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@4"
+				},
+				{
+					"command": "ith2ome.calendarRefresh",
+					"when": "view == ith2ome.calendar",
+					"group": "navigation@5"
 				}
 			],
 			"view/item/context": [
@@ -329,12 +388,11 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run esbuild-base -- --minify",
-		"esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-		"esbuild": "npm run esbuild-base -- --sourcemap",
-		"esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
+		"vscode:prepublish": "rolldown -c --minify",
+		"build": "rolldown -c",
+		"build:watch": "rolldown -c --watch",
 		"package": "vsce package --no-dependencies",
-		"verify": "vsce verify-pat && ovsx verify-pat",
+		"verify": "vsce verify-pat",
 		"deploy": "vsce publish --no-dependencies",
 		"deploy:ovsx": "ovsx publish --no-dependencies"
 	},
@@ -345,12 +403,10 @@
 		"@types/crypto-js": "^4.2.2",
 		"@types/node": "^26.5.0",
 		"@types/vscode": "1.88.0",
-		"@typescript-eslint/eslint-plugin": "^8.70.0",
-		"@typescript-eslint/parser": "^8.70.0",
 		"@vscode/vsce": "^3.9.2",
-		"esbuild": "^0.28.2",
-		"eslint": "^10.10.0",
 		"ovsx": "^1.2.0",
-		"typescript": "^6.0.3"
+		"oxlint": "^1.86.0",
+		"rolldown": "^1.2.12",
+		"typescript": "^7.0.2"
 	}
 }

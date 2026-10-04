@@ -8,6 +8,7 @@ src/
 pnpm-lock.yaml
 tsconfig.json
 AGENTS.md
-eslint.config.mjs
+.oxlintrc.json
+rolldown.config.ts
 pnpm-workspace.yaml
 *.vsix

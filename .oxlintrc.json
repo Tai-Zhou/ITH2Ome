@@ -1,0 +1,16 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": [
+		"typescript"
+	],
+	"categories": {
+		"correctness": "error"
+	},
+	"ignorePatterns": [
+		"out/**"
+	],
+	"rules": {
+		// 之家 API 返回未类型化 JSON，回调中大量有意使用 any
+		"typescript/no-explicit-any": "off"
+	}
+}
