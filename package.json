@@ -50,6 +50,11 @@
 					"icon": "img/icon.svg"
 				},
 				{
+					"id": "ith2ome.search",
+					"name": "搜索",
+					"icon": "img/icon.svg"
+				},
+				{
 					"id": "ith2ome.latest",
 					"name": "最新",
 					"icon": "img/icon.svg"
@@ -99,6 +104,21 @@
 				"command": "ith2ome.openBrowser",
 				"title": "在浏览器中查看",
 				"icon": "$(globe)"
+			},
+			{
+				"command": "ith2ome.searchNew",
+				"title": "搜索",
+				"icon": "$(search)"
+			},
+			{
+				"command": "ith2ome.searchClear",
+				"title": "全部删除",
+				"icon": "$(clear-all)"
+			},
+			{
+				"command": "ith2ome.searchDelete",
+				"title": "删除",
+				"icon": "$(trash)"
 			},
 			{
 				"command": "ith2ome.latestRefresh",
@@ -170,6 +190,16 @@
 					"group": "navigation"
 				},
 				{
+					"command": "ith2ome.searchClear",
+					"when": "view == ith2ome.search",
+					"group": "navigation@0"
+				},
+				{
+					"command": "ith2ome.searchNew",
+					"when": "view == ith2ome.search",
+					"group": "navigation@1"
+				},
+				{
 					"command": "ith2ome.latestRefresh",
 					"when": "view == ith2ome.latest",
 					"group": "navigation"
@@ -239,6 +269,11 @@
 				{
 					"command": "ith2ome.logout",
 					"when": "view == ith2ome.account && viewItem == ith2ome.account",
+					"group": "inline"
+				},
+				{
+					"command": "ith2ome.searchDelete",
+					"when": "view == ith2ome.search && viewItem == ith2ome.search",
 					"group": "inline"
 				},
 				{
@@ -326,6 +361,11 @@
 					"default": true,
 					"description": "查看内容时是否模糊反对多于支持的评论。"
 				},
+				"ith2ome.commentBlockUsers": {
+					"type": "array",
+					"default": [],
+					"description": "评论用户黑名单（软媒通行证数字ID）。"
+				},
 				"ith2ome.autoRefresh": {
 					"type": "integer",
 					"default": 300,
@@ -341,6 +381,11 @@
 						"C919"
 					],
 					"description": "关键词列表，会在标题列表内强调显示。"
+				},
+				"ith2ome.keyWordsPush": {
+					"type": "boolean",
+					"default": false,
+					"description": "自动刷新时对命中关键词的文章进行弹窗提醒。"
 				},
 				"ith2ome.blockWords": {
 					"type": "array",
@@ -368,6 +413,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "查看内容是否隐藏广告声明。"
+				},
+				"ith2ome.unreadBadge": {
+					"type": "boolean",
+					"default": true,
+					"description": "在侧边栏图标上显示上次手动刷新之后新文章数。"
 				}
 			}
 		}
