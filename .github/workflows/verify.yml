@@ -15,14 +15,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-      - name: Install Node.js
-        uses: actions/setup-node@v7
+      - name: Install pnpm and Node.js
+        uses: pnpm/setup@v3
         with:
-          node-version: 26
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          version: ^12.0.0
+          runtime: node@26
+          cache: true
+          require-lockfile: true
       - name: Type check
         run: pnpm exec tsc --noEmit
       - name: Lint

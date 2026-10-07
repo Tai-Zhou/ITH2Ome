@@ -8,7 +8,7 @@ IT之家第三方 VS Code 插件，划水特供版。
 - VS Code Extension API
 - rolldown (打包)
 - oxlint (代码检查)
-- pnpm (包管理，版本由 `package.json` 的 `packageManager` 固定，workflow 里不写 `version`)
+- pnpm (包管理，版本在 workflow 的 `pnpm/setup` 里用 `version` 指定；`package.json` **不写** `packageManager`，否则本地 pnpm 会被强制切到该版本，与"本地随时更新"冲突)
 
 ## 项目结构
 
@@ -51,6 +51,7 @@ pnpm exec oxlint src/
 
 - `publish.yml`：在 `release` 创建或 `workflow_dispatch` 时，先 `vsce package` 打一次包，再把**同一个 `.vsix`** 分别发到 VS Code Marketplace 与 Open VSX。
 - `verify.yml`：push/PR 时先 `tsc --noEmit` 类型检查与 `oxlint` 检查，再打包；push 时用 `pnpm run verify`（即 `vsce verify-pat`）验证 Marketplace 发布权限。
+- 两个 workflow 都用 `pnpm/setup@v3` 一步装好 pnpm 与 Node（`version: ^12.0.0` + `runtime: node@26`），不再用 `actions/setup-node`；`require-lockfile: true` 让它在安装前就要求 `pnpm-lock.yaml` 存在并以 `--frozen-lockfile` 安装，因此不需要单独的 `pnpm install` 步骤。仓库里没有 `.nvmrc`／`.node-version`／`.tool-versions`，Node 版本必须靠 `runtime` 显式指定。
 - 认证只需一个 GitHub Actions secret：`VSCE_PAT`（Marketplace，Azure DevOps PAT，2026-12-01 前有效）。
 - Open VSX 走 trusted publishing（`ovsx publish --trusted-publishing`，CI 里 `id-token: write`），不再需要 `OVSX_PAT` 与 `ovsx verify-pat`，也不需要额外的 secret。
 
