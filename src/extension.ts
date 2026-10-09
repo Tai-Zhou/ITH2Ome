@@ -81,6 +81,8 @@ interface CommentJSON {
 class Ith2omeItem extends vscode.TreeItem { // 在 TreeItem 基础上增加 shareInfo 用于复制链接、children 用于层级树
 	shareInfo?: string;
 	children?: Ith2omeItem[];
+	topicSlug?: string; // 专题条目的 slug，展开时据此懒加载子文章
+	topicPromise?: Promise<Ith2omeItem[]>; // 专题子文章的加载中的请求，同一节点复用
 }
 
 let extensionPath: string; // 插件路径
@@ -197,7 +199,7 @@ function highlight(title: string): [number, number][] { // 返回该条新闻关
 function notifyNews(news: any): void { // 自动刷新时，对新出现且命中所设关键词的文章弹窗提醒
 	vscode.window.showInformationMessage(news.title, '查看').then(choice => {
 		if (choice == '查看')
-			vscode.commands.executeCommand('ith2ome.showContent', specialTopicSlug(news.url) ? 'topic' : 'news', news.title, contentKey(news));
+			vscode.commands.executeCommand('ith2ome.showContent', news.title, String(news.newsid));
 	});
 }
 
@@ -255,9 +257,8 @@ function eventTimeFormat(value: string): string { // 事件时刻格式化（按
 function newsFormat(news: any, icon: string): Ith2omeItem { // TreeItem 对象格式化
 	let time = new Date(news.postdate).toLocaleString('zh-CN');
 	let highlights = highlight(news.title);
-	let mode = specialTopicSlug(news.url) ? 'topic' : 'news';
 	let id = contentKey(news);
-	let counts = `点击数：${news.hitcount}` + (news.commentcount == undefined ? '' : `｜评论数：${news.commentcount}`); // 搜索结果没有评论数
+	let counts = [news.hitcount == undefined ? '' : `点击数：${news.hitcount}`, news.commentcount == undefined ? '' : `评论数：${news.commentcount}`].filter(text => text).join('｜'); // 搜索结果没有评论数、专题子文章没有点击数
 	let tooltip = new vscode.MarkdownString(`**${news.title}**\n\n` + (previewImageWidth > 0 ? `<img src="${news.image}" width="${previewImageWidth}">` : '') + `\n\n*${time}*\n\n${news.description}\n\n${counts}`);
 	tooltip.supportHtml = true;
 	return {
@@ -268,7 +269,7 @@ function newsFormat(news: any, icon: string): Ith2omeItem { // TreeItem 对象�
 		description: time,
 		resourceUri: linkCheck(news.url),
 		tooltip,
-		command: { title: '查看内容', command: 'ith2ome.showContent', arguments: [mode, news.title, id] },
+		command: specialTopicSlug(news.url) ? undefined : { title: '查看内容', command: 'ith2ome.showContent', arguments: [news.title, id] }, // 专题不再支持打开页面
 		shareInfo: `标题：${news.title}\n时间：${time}\n内容：${news.description}\n${counts}\n`
 	};
 }
@@ -283,52 +284,38 @@ function linkFormat(text: string): string { // 之家文章链接格式化
 		let title = link.match(RegExp('(?<=>).*?(?=<)'))![0];
 		let href = link.match(RegExp('href=["\']([^"\']*)["\']'))![1];
 		let slug = specialTopicSlug(href);
-		let id, mode;
-		if (slug) { // 专题链接
-			mode = 'topic';
-			id = slug;
-		} else { // 文章链接
-			mode = 'news';
-			id = String(Number(href.match(RegExp('ithome\\.com/(\\d+)/(\\d+)/(\\d+)\\.htm'))!.slice(1).join('')));
-		}
-		text = text.replace(link, `<a href="" onclick="ITH2OmeOpen('${title}','${mode}','${id}');">${title}</a>`);
+		let article = slug ? null : href.match(RegExp('ithome\\.com/(\\d+)/(\\d+)/(\\d+)\\.htm'));
+		if (slug || !article) // 专题链接与其它非文章链接不改写，保持原链接由浏览器打开
+			continue;
+		let id = String(Number(article.slice(1).join('')));
+		text = text.replace(link, `<a href="" onclick="ITH2OmeOpen('${title}','${id}');">${title}</a>`);
 	}
 	return text;
 }
 
-function specialTopicFormat(html: string): string { // 预处理专题页整页 HTML
-	html = html.replace(/<img\b([^>]*?)\bdata-original="([^"]*)"([^>]*)>/g, '<img$1src="$2"$3>'); // 懒加载图换 src
-	html = html.replace(/(src|href)="\/\//g, '$1="https://'); // 协议相对资源补全
-	html = html.replace(/jsDateDiff\('([^']+)'\)/g, (_match: string, time: string) => new Date(time.replace(/\//g, '-')).toLocaleString('zh-CN')); // 原站时间脚本服务端渲染
-	html = html.replace(/<script[\s\S]*?<\/script>/gi, ''); // 删除原站脚本
-	const meta = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: http: data:; style-src https: 'unsafe-inline'; font-src https:; script-src 'unsafe-inline'">`;
-	const style = `<style>
-		body{font-family:var(--vscode-font-family);background:var(--vscode-editor-background);color:var(--vscode-foreground);margin:0 auto;max-width:60em;padding:0 1em}
-		a{color:var(--vscode-textLink-foreground);cursor:pointer;text-decoration:none}
-		a:hover{text-decoration:underline}
-		img{max-width:100%}
-	</style>`;
-	const script = `<script>const vscode=acquireVsCodeApi();
-		document.addEventListener('click', event => {
-			let link = event.target.closest('a');
-			if (!link) return;
-			let href = link.href;
-			let topic = href.indexOf('ithome.com/zt/');
-			if (topic != -1) {
-				event.preventDefault();
-				let id = href.substring(topic + 'ithome.com/zt/'.length).split(/[?#]/)[0];
-				vscode.postMessage({command: 'showContent', mode: 'topic', title: link.innerText.trim() || '', id: id});
-			} else {
-				let id = href.match(/\\/0\\/([0-9]+)\\.htm/);
-				if (id) {
-					event.preventDefault();
-					vscode.postMessage({command: 'showContent', mode: 'news', title: link.innerText.trim() || '', id: id[1]});
-				}
-			}
-		});</script>`;
-	return html
-		.replace('</head>', meta + style + '</head>')
-		.replace('</body>', script + '</body>');
+function topicNewsList(html: string): any[] { // 解析专题页里的子文章，页面顺序即最新在前，最多 50 篇
+	let list = html.match(RegExp('<ol class="newslist[\\s\\S]*?</ol>'));
+	if (!list)
+		return [];
+	let newsList: any[] = [];
+	for (let item of list[0].match(RegExp('<li>[\\s\\S]*?</li>', 'g')) ?? []) {
+		let time = item.match(RegExp("(?<=jsDateDiff\\(')[^']*"));
+		let href = item.match(RegExp('ithome\\.com/(\\d+)/(\\d+)/(\\d+)\\.htm'));
+		let title = item.match(RegExp('(?<=<h2>)[\\s\\S]*?(?=</h2>)'));
+		if (!time || !href || !title)
+			continue;
+		let comment = item.match(RegExp('(?<=<div class="comment">)\\d+'));
+		newsList.push({
+			newsid: Number(href.slice(1).join('')),
+			url: 'https://' + href[0],
+			title: title[0].trim(),
+			description: item.match(RegExp('(?<=<p class="hidden-xs">)[\\s\\S]*?(?=</p>)'))?.[0] ?? '',
+			postdate: new Date(time[0]).toISOString(),
+			image: item.match(RegExp('(?<=data-original=")[^"]*'))?.[0],
+			commentcount: comment == undefined ? undefined : Number(comment[0])
+		});
+	}
+	return newsList;
 }
 
 function numberFormat(num: number): string { // 中文数字显示格式化
@@ -696,7 +683,7 @@ class SearchProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 搜索
 }
 
 class LatestProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 最新
-	update = new vscode.EventEmitter<void>(); // 用于触发刷新
+	update = new vscode.EventEmitter<Ith2omeItem | undefined | null | void>(); // 用于触发刷新，传入条目时只刷新该条目
 	readonly onDidChangeTreeData = this.update.event;
 	list: Ith2omeItem[] = []; // 项目列表
 	idSet: Set<string> = new Set(); // 文章 ID 集合
@@ -725,7 +712,7 @@ class LatestProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 最新
 				for (let top of topList)
 					if (show(top.title, false) && !this.idSet.has(contentKey(top))) {
 						this.idSet.add(contentKey(top));
-						this.list.push(newsFormat(top, 'pinned'));
+						this.list.push(this.itemFormat(top, 'pinned'));
 						let orderTime = new Date(top.orderdate).getTime() || 0;
 						newestOrder = Math.max(newestOrder, orderTime);
 						if (refreshType != 0 && orderTime > this.readOrder)
@@ -745,7 +732,7 @@ class LatestProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 最新
 					keys.add(contentKey(news));
 					if (show(news.title, news.aid) && !this.idSet.has(contentKey(news))) {
 						this.idSet.add(contentKey(news));
-						this.list.push(newsFormat(news, news.aid ? 'tag' : (news.v == '100' ? 'device-camera-video' : 'preview')));
+						this.list.push(this.itemFormat(news, news.aid ? 'tag' : (news.v == '100' ? 'device-camera-video' : 'preview')));
 						if (refreshType == 1 && keyWordsPush && this.notifyReady && !this.notifyKeys.has(contentKey(news)) && highlight(news.title).length > 0) // 仅自动刷新时提醒新出现且命中关键词的条目
 							notifyNews(news);
 						if (refreshType != 0 && orderTime > this.readOrder)
@@ -775,7 +762,7 @@ class LatestProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 最新
 					}
 					if (show(news.title, news.url.search('lapin') != -1) && !this.idSet.has(contentKey(news))) {
 						this.idSet.add(contentKey(news));
-						this.list.push(newsFormat(news, news.url.search('lapin') != -1 ? 'tag' : (news.v == '100' ? 'device-camera-video' : 'preview')));
+						this.list.push(this.itemFormat(news, news.url.search('lapin') != -1 ? 'tag' : (news.v == '100' ? 'device-camera-video' : 'preview')));
 					}
 				}
 				this.list.push({
@@ -791,9 +778,50 @@ class LatestProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 最新
 				refreshConfig().then(() => this.refresh(1), () => this.refresh(1));
 			}, autoRefresh * 1000); // 设置自动刷新时间
 	}
-	getChildren(element?: Ith2omeItem): vscode.TreeItem[] { // 获取项目列表
-		if (element)
+	itemFormat(news: any, icon: string): Ith2omeItem { // 专题条目作为可展开父节点，不再点击打开页面，但仍保留复制与浏览器按钮
+		let item = newsFormat(news, icon);
+		let slug = specialTopicSlug(news.url);
+		if (slug) {
+			item.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+			item.topicSlug = slug;
+		}
+		return item;
+	}
+	topicChildren(element: Ith2omeItem): Promise<Ith2omeItem[]> { // 展开专题时懒加载子文章，同一节点复用同一请求
+		if (!element.topicPromise)
+			element.topicPromise = getText('https://www.ithome.com/zt/' + element.topicSlug).then(res => {
+				if (!res.ok) { // 失败不缓存，展开或点击重试时会重新拉取
+					element.topicPromise = undefined;
+					return [{
+						label: '专题加载失败，点击重试',
+						iconPath: new vscode.ThemeIcon('refresh'),
+						command: { title: '重试', command: 'ith2ome.loadTopic', arguments: [element] }
+					}];
+				}
+				let children: Ith2omeItem[] = []; // 子文章套用屏蔽词，专题页列表本身没有广告
+				let idSet = new Set<string>();
+				for (let news of topicNewsList(res.text))
+					if (show(news.title, false) && !idSet.has(String(news.newsid))) {
+						idSet.add(String(news.newsid));
+						let item = newsFormat(news, 'preview');
+						item.id = String(element.id) + '-' + item.id; // TreeItem.id 需在整棵树内唯一
+						children.push(item);
+					}
+				if (children.length == 0)
+					children.push({ label: '专题暂无文章', iconPath: new vscode.ThemeIcon('info') });
+				element.children = children;
+				return children;
+			});
+		return element.topicPromise;
+	}
+	getChildren(element?: Ith2omeItem): vscode.ProviderResult<Ith2omeItem[]> { // 获取项目列表
+		if (element) {
+			if (element.children) // 已加载
+				return element.children;
+			if (element.topicSlug) // 专题子文章，展开时才拉取
+				return this.topicChildren(element);
 			return [];
+		}
 		return this.list;
 	}
 	getTreeItem(element: Ith2omeItem): vscode.TreeItem { // 获取项目
@@ -860,7 +888,7 @@ class CommentProvider implements vscode.TreeDataProvider<Ith2omeItem> { // 热�
 					description: time,
 					resourceUri: linkCheck(comment.News.NewsLink),
 					tooltip: new vscode.MarkdownString(`*${comment.Comment.C.replace(RegExp('[\n]+', 'g'), '*\n\n*')}*\n\n**${comment.News.NewsTitle}**\n\n*${time}*\n\n${user}`),
-					command: { title: '查看内容', command: 'ith2ome.showContent', arguments: ['news', comment.News.NewsTitle, comment.News.NewsId] },
+					command: { title: '查看内容', command: 'ith2ome.showContent', arguments: [comment.News.NewsTitle, comment.News.NewsId] },
 					shareInfo: `${comment.Comment.C}\n\n标题：${comment.News.NewsTitle}\n时间：${time}\n用户：${user}\n`
 				});
 			}
@@ -1029,7 +1057,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			refreshConfig();
 			account.refresh();
 		}),
-		vscode.commands.registerCommand('ith2ome.showContent', (mode: string, title: string, id: string) => { // 显示新闻（news）或专题（topic）
+		vscode.commands.registerCommand('ith2ome.showContent', (title: string, id: string) => { // 显示新闻内容
 			let session = ++contentSession; // 本次查看内容的会话令牌，丢弃切换内容后才返回的请求
 			if (panel) { // 若标签页已存在
 				panel.reveal(vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined);
@@ -1040,8 +1068,8 @@ export async function activate(context: vscode.ExtensionContext) {
 				panel.webview.onDidReceiveMessage(
 					message => {
 						switch (message.command) {
-							case 'showContent': // 打开之家文章或专题
-								vscode.commands.executeCommand('ith2ome.showContent', message.mode, message.title, message.id);
+							case 'showContent': // 打开之家文章
+								vscode.commands.executeCommand('ith2ome.showContent', message.title, message.id);
 								break;
 							case 'voteArticle': // 文章投票
 								voteArticle(panel!, message.id, message.type, message.grade, message.support, message.against);
@@ -1064,24 +1092,6 @@ export async function activate(context: vscode.ExtensionContext) {
 					context.subscriptions
 				);
 				panel.onDidDispose(() => { panel = undefined; ++contentSession; }, null, context.subscriptions); // 关闭面板后作废在途请求
-			}
-			if (mode == 'topic') { // 专题
-				getText('https://www.ithome.com/zt/' + id).then(resTopic => { // 获取专题页
-					if (session != contentSession) // 已切换到其它内容
-						return;
-					if (!resTopic.ok)
-						return vscode.window.showErrorMessage('专题加载失败，请检查网络！');
-					let pageTitle = resTopic.text.match(RegExp('(?<=<title>).*?(?=</title>)'));
-					if (pageTitle) {
-						let topicTitle = pageTitle[0];
-						let suffix = topicTitle.search(RegExp('\\s*[|_—\\-]\\s*IT之家'));
-						if (suffix != -1)
-							topicTitle = topicTitle.substring(0, suffix);
-						panel!.title = titleFormat(topicTitle);
-					}
-					panel!.webview.html = specialTopicFormat(resTopic.text);
-				});
-				return;
 			}
 			getJSON(`https://api.ithome.com/json/newscontent/${id}`).then(resNews => { // 获取新闻内容
 				if (session != contentSession) // 已切换到其它内容
@@ -1133,9 +1143,9 @@ export async function activate(context: vscode.ExtensionContext) {
 					+ '#scroll-to-top:hover{background-color:var(--vscode-button-hoverBackground);box-shadow:2px 2px 2px rgba(0,0,0,.25);}' // 回到顶部按钮悬浮样式
 					+ '</style><script>'
 					+ 'let vscode=acquireVsCodeApi();'
-					+ `function ITH2OmeOpen(title,mode,id) {
-						vscode.postMessage({command:"showContent",title,mode,id});
-					}` // 打开相关文章或专题
+					+ `function ITH2OmeOpen(title,id) {
+						vscode.postMessage({command:"showContent",title,id});
+					}` // 打开相关文章
 					+ `function voteArticleWebview(articleId,grade,support,against) {
 						if (articleId < 0)
 							vscode.postMessage({command:"showError", text:"请先取消投票！"});
@@ -1217,7 +1227,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						let text = '<h2>相关文章</h2><ul>';
 						let relateList = resRelate.body.data.relatedNewsResponseModels;
 						for (let relatedNews of relateList)
-							text += `<li><a href="" onclick="ITH2OmeOpen('${relatedNews.newstitle}','news',${relatedNews.newsid})">${relatedNews.newstitle}</a></li>`;
+							text += `<li><a href="" onclick="ITH2OmeOpen('${relatedNews.newstitle}',${relatedNews.newsid})">${relatedNews.newstitle}</a></li>`;
 						panel!.webview.html = panel!.webview.html.replace('<h2>相关文章</h2>', text + '</ul>');
 					});
 				}
@@ -1259,6 +1269,10 @@ export async function activate(context: vscode.ExtensionContext) {
 			if (typeof refreshType != 'number')
 				refreshType = 0; // 有时 VS Code 会返回一个 ith2omeItem，原因不明
 			latest.refresh(refreshType);
+		}),
+		vscode.commands.registerCommand('ith2ome.loadTopic', (element: Ith2omeItem) => { // 加载专题子文章，仅供树内使用
+			element.topicPromise = undefined;
+			latest.update.fire(element);
 		}),
 		vscode.commands.registerCommand('ith2ome.hotRefresh', () => { // 刷新“热榜”
 			refreshConfig();

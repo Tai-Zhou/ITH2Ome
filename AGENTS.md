@@ -81,11 +81,19 @@ pnpm exec oxlint src/
 
 ### 内容跳转
 
-- 内容分两种：普通文章（`mode = 'news'`，`id` 为 `newsid`）与专题（`mode = 'topic'`，`id` 为 url 中 `/zt/` 后的 slug）。
-- 打开内容统一走命令 `ith2ome.showContent(mode, title, id)`；webview 内链接点击通过 `postMessage({command:'showContent', title, mode, id})` 转发。
-- 查看内容用统一的会话令牌 `contentSession`：`showContent` 入口 `let session = ++contentSession;`，所有会异步改写 webview 的回调（专题、正文、B 站视频、打分、相关文章、评论）开头都要 `if (session != contentSession) return;`，丢弃切换内容后才返回的旧请求。新增这类异步回调时必须照此加守卫，翻页请求（`moreComments`）传当前的 `contentSession`。`panel.onDidDispose` 里也要 `++contentSession`，关闭面板后同样作废在途请求，避免 `panel` 已置空、或被 dispose 后回调再访问 webview。
+- 内容只有普通文章（`id` 为 `newsid`）；**专题不是可打开的内容类型**，插件内不渲染专题页：`ith2ome.showContent(title, id)` 没有 mode 参数，`newsFormat` 对专题条目不设 `command`（「最新」里是可展开父节点，「热榜」「搜索」里点击无动作），正文里的 `/zt/` 链接保持原链接由浏览器打开。
+- 打开内容统一走命令 `ith2ome.showContent(title, id)`；webview 内链接点击通过 `postMessage({command:'showContent', title, id})` 转发。
+- 查看内容用统一的会话令牌 `contentSession`：`showContent` 入口 `let session = ++contentSession;`，所有会异步改写 webview 的回调（正文、B 站视频、打分、相关文章、评论）开头都要 `if (session != contentSession) return;`，丢弃切换内容后才返回的旧请求。新增这类异步回调时必须照此加守卫，翻页请求（`moreComments`）传当前的 `contentSession`。`panel.onDidDispose` 里也要 `++contentSession`，关闭面板后同样作废在途请求，避免 `panel` 已置空、或被 dispose 后回调再访问 webview。
 - 列表去重与 `TreeItem.id` 一律使用 `contentKey(news)`（专题用 slug，文章用 newsid），保证同一刷新内 id 唯一。
-- 专题 `/zt` 整页渲染用 `specialTopicFormat(html)` 预处理（去脚本、懒加载图换 src、补协议相对链接、注入 CSP 与点击拦截）。
+
+### 专题子文章
+
+- 「最新」里的专题条目是**可展开父节点**：`LatestProvider.itemFormat()` 在 `newsFormat()` 基础上设 `collapsibleState: Collapsed`、记 `topicSlug`，行内「复制到剪贴板」与「浏览器打开」按钮（`contextValue` 仍为 `ith2ome.article`）保留；专题在插件内不可打开（`newsFormat` 不给专题设 `command`，`showContent` 也没有专题分支），正文里的 `/zt/` 链接与父节点的浏览器按钮都交给外部浏览器。
+- 子文章**展开时才懒加载**（`LatestProvider.getChildren` 返回 `ProviderResult`）：`https://www.ithome.com/zt/<slug>` 与 `showContent('topic')` 同一个地址，用 `topicNewsList(html)` 解析 `<ol class="newslist">` 下的 `<li>`（`a[href]` → newsid、`<h2>` 标题、`p.class="hidden-xs"` 摘要、`data-original` 缩略图、`jsDateDiff('时间')`、`div.comment` 评论数）；页面顺序即**最新在前**，不重排。同一节点复用 `topicPromise`，避免重复请求。
+- 该列表**只有最新 50 篇且没有分页**：`?page=2` 与首页字节完全相同、路径式分页 404、移动版「查看更多」只是 CSS 取消 `hide`、公开 JSON 接口不存在。所以不提供翻页，也不加「仅显示 50 篇」之类提示；想看完整专题只能靠父节点的浏览器按钮。
+- 子项复用 `newsFormat(news, 'preview')`，`id` 加父节点前缀（`<父 id>-<子 id>`）保证全树唯一；套用 `show(title, false)`，即**屏蔽词生效**、不额外过滤广告；`newsFormat` 的 `counts` 用数组 `filter(Boolean).join('｜')` 拼装，容忍专题子文章缺失 `hitcount`。
+- 拉取失败时返回**不缓存**的占位子项「专题加载失败，点击重试」，其命令 `ith2ome.loadTopic`（仅供树内使用，**不写进** `package.json` 的 `commands`）清空 `topicPromise` 后 `update.fire(element)` 重拉；解析结果为空时显示「专题暂无文章」。
+- 子文章不参与未读徽标与新文提醒，`lastReadId` 标记逻辑也不变；「最新」每次刷新重建列表对象，靠稳定的 `TreeItem.id` 保留展开态，于是已展开的专题会在下次刷新后重新拉取，不需要额外的刷新定时器或设置项。
 
 ### 日历
 
@@ -128,7 +136,7 @@ pnpm exec oxlint src/
 
 ### 未读徽标
 
-- 未读徽标**没有任何独立轮询**：`unreadBaseline`/`maxid`/`newscount` 与 60 秒的 `setInterval` 全部移除（专题页仍在用 `getText`，不要顺手删）。徽标数只在「最新」的首屏刷新里算出来，即 `readOrder`（上次手动刷新时首屏最新的 `orderdate`）之后新出现的可见条目数——`toplist` 与 `newslist` 都算，`show()` 过滤掉的广告与屏蔽词不计。
+- 未读徽标**没有任何独立轮询**：`unreadBaseline`/`maxid`/`newscount` 与 60 秒的 `setInterval` 全部移除（专题子文章仍在用 `getText`，不要顺手删）。徽标数只在「最新」的首屏刷新里算出来，即 `readOrder`（上次手动刷新时首屏最新的 `orderdate`）之后新出现的可见条目数——`toplist` 与 `newslist` 都算，`show()` 过滤掉的广告与屏蔽词不计。
 - `refreshType == 0`（手动刷新，含激活时构造函数的首次加载）时把 `readOrder` 前移并归零徽标，所以**手动刷新那一刻新出现的条目按已读计**；`refreshType == 1` 的自动刷新、`>= 2` 的「加载更多」都不动 `readOrder`。基线不持久化（内存变量），重启后以当时的最新为已读位置。`autoRefresh` 为 0 时徽标只在手动刷新时归零，不会再增长。
 - 徽标通过 `latestTreeView.badge = { value, tooltip }` 设置，计数为 0 时设 `undefined` 清除。因此 `ith2ome.latest` 必须用 `createTreeView` 注册（并 push 进 `context.subscriptions`）才能拿到视图句柄，其余视图仍用 `registerTreeDataProvider`。徽标挂在 **Activity Bar 的视图容器图标**上（六个视图共用一个容器图标），不是「最新」那一行。开关为 `ith2ome.unreadBadge`，默认开。
 - 「上次阅读到这里」标记与未读徽标**不是同一个规则**，不要"顺手统一"：标记锚定 `lastReadId`（只在初始化与手动刷新时前移），停在**上一次列表刷新之前**的最新一篇，所以**手动刷新时新出现的那批条目会留在标记上方直到下次刷新**；而徽标在手动刷新那一刻就把它们算作已读、立即归零。两者相差的就是这批条目，这是有意为之。
